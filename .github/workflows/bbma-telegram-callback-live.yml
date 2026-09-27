@@ -1,0 +1,27 @@
+name: BBMA Telegram Callback Live
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bbma-telegram-callback-live
+  cancel-in-progress: true
+
+jobs:
+  callback-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Listen for Telegram BBMA callbacks
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          POLL_WINDOW_MS: '50000'
+        run: node scripts/poll-bbma-telegram.mjs

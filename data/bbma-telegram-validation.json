@@ -1,0 +1,26 @@
+{
+  "observations": [
+    {
+      "alert_id": "callback-validation-v1",
+      "symbol": "XAUUSD",
+      "direction": "BUY",
+      "readiness": "VALIDATION_ONLY",
+      "bbma": {
+        "direction": "BUY",
+        "readiness": "VALIDATION_ONLY",
+        "fractal_snapshot": {
+          "MN": {"direction": "BUY", "active_detectors": ["REENTRY_BUY"]},
+          "W1": {"direction": "BUY", "active_detectors": ["MOMENTUM_BUY"]},
+          "D1": {"direction": "BUY", "active_detectors": ["CSA_BUY"]},
+          "H4": {"direction": "BUY", "active_detectors": ["REENTRY_BUY"]},
+          "H1": {"direction": "BUY", "active_detectors": ["EXTREME_BUY"]},
+          "M30": {"direction": "BUY", "active_detectors": ["CSA_BUY"]},
+          "M15": {"direction": "BUY", "active_detectors": ["REENTRY_BUY"]},
+          "M5": {"direction": "BUY", "active_detectors": ["CSA_BUY"]}
+        }
+      },
+      "news": {"event": "CALLBACK VALIDATION", "impact": "TEST", "gate": "ALLOW_TEST_ONLY"},
+      "evidence": {"coverage": "8/8 TF", "reason_codes": ["SYNTHETIC_VALIDATION", "NO_BROKER_EXECUTION"]}
+    }
+  ]
+}

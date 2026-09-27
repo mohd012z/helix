@@ -9,9 +9,19 @@ const buy=()=>[c(t1,{close:101}),c(t2,{high:108,close:106})];
 const sell=()=>[c(t1,{open:99,high:101,low:96,close:99,ema50:110}),c(t2,{open:98,high:100,low:92,close:94,ema50:110,ma5_high:101})];
 const all=(factory)=>Object.fromEntries(BBMA_TIMEFRAMES.map(tf=>[tf,factory()]));
 
-test('always exposes six timeframe slots in canonical order',()=>{
+test('canonical BBMA evidence spans MN through M5 in structural order',()=>{
+  assert.deepEqual(BBMA_TIMEFRAMES,['MN','W1','D1','H4','H1','M30','M15','M5']);
   const r=aggregateBbmaEvidence({seriesByTimeframe:all(neutral)});
-  assert.deepEqual(Object.keys(r.timeframes),['D1','H4','H1','M30','M15','M5']);
+  assert.deepEqual(Object.keys(r.timeframes),['MN','W1','D1','H4','H1','M30','M15','M5']);
+});
+
+test('MN and W1 are accepted and independently inspectable',()=>{
+  const input=all(neutral); input.MN=buy(); input.W1=sell();
+  const r=aggregateBbmaEvidence({seriesByTimeframe:input});
+  assert.equal(r.timeframes.MN.timeframe,'MN');
+  assert.equal(r.timeframes.W1.timeframe,'W1');
+  assert.ok(r.buy_timeframes.includes('MN'));
+  assert.ok(r.sell_timeframes.includes('W1'));
 });
 
 test('aligned directional evidence is descriptive only',()=>{
@@ -25,7 +35,7 @@ test('opposing valid timeframes produce MIXED and preserve support lists',()=>{
   assert.equal(r.overall_state,'MIXED'); assert.ok(r.buy_timeframes.includes('H4')); assert.ok(r.sell_timeframes.includes('M15'));
 });
 
-test('missing required timeframe produces INCOMPLETE without discarding evaluated evidence',()=>{
+test('missing required setup timeframe produces INCOMPLETE without discarding evaluated evidence',()=>{
   const input=all(buy); delete input.M5;
   const r=aggregateBbmaEvidence({seriesByTimeframe:input});
   assert.equal(r.overall_state,'INCOMPLETE'); assert.equal(r.timeframes.M5.status,'INSUFFICIENT_DATA'); assert.ok(r.buy_timeframes.includes('H4'));

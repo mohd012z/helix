@@ -4,9 +4,14 @@ import { detectCsa } from './csa.mjs';
 import { detectReentry } from './reentry.mjs';
 import { detectMomentum } from './momentum.mjs';
 
+// One BBMA methodology is applied fractally on every supported timeframe.
+// Semantic role is assigned by the MTF layer; detector mathematics/order do
+// not change merely because a timeframe is HTF or LTF.
 const ORDER=Object.freeze([
   ['EXTREME',detectExtreme],['MHV',detectMhv],['CSA',detectCsa],['REENTRY',detectReentry],['MOMENTUM',detectMomentum]
 ]);
+
+export const BBMA_DETECTOR_ORDER=Object.freeze(ORDER.map(([name])=>name));
 
 function normalize(name, value) {
   return Object.freeze({ ...value, detector:name, evidence:Object.freeze([...(value.evidence ?? [])]) });

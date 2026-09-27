@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-09-26T09:30:33+08:00",
+    "generatedAt": "2026-09-27T09:23:43+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-09-26",
-        "timestamp": "2026-09-26T09:30:33+08:00"
+        "detail": "latest daily bar 2026-09-27",
+        "timestamp": "2026-09-27T09:23:43+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-09-26T09:30:33+08:00"
+        "timestamp": "2026-09-27T09:23:44+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-09-26T09:30:41+08:00"
+        "timestamp": "2026-09-27T09:23:52+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
         "detail": "latest 2026-09-24",
-        "timestamp": "2026-09-26T09:30:43+08:00"
+        "timestamp": "2026-09-27T09:23:52+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "1 relevant recent items",
-        "timestamp": "2026-09-26T09:30:43+08:00"
+        "detail": "0 relevant recent items",
+        "timestamp": "2026-09-27T09:23:52+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-09-26T09:30:43+08:00"
+        "timestamp": "2026-09-27T09:23:52+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-09-26 09:30 MYT",
+  "updated": "2026-09-27 09:23 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
     "spot": 4286.2,
-    "change": -0.54,
-    "changePct": -0.01,
-    "dayRange": "4,284.86 - 4,286.45",
+    "change": -0.01,
+    "changePct": -0.0,
+    "dayRange": "4,286.08 - 4,286.34",
     "monthPct": -3.22,
     "yearPct": -0.67,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-09-26; rolling history used: 370 bars",
+    "note": "Latest provider daily bar: 2026-09-27; rolling history used: 370 bars",
     "latestDailyClose": 4286.2,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-09-26"
+    "providerBarTime": "2026-09-27"
   },
   "macro": [
     {
@@ -95,7 +95,7 @@ window.XAUUSD_DATA = {
   "sentiment": {
     "bias": "DOWNWARD",
     "goldTone": "BEARISH",
-    "score": -0.479,
+    "score": -0.477,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
     "netSpeechSignal": "DOWN",
@@ -137,18 +137,7 @@ window.XAUUSD_DATA = {
       }
     ]
   },
-  "news": [
-    {
-      "time": "2026-09-25 00:07 UTC",
-      "title": "Gold prices dip amid Iran tensions, Fed rate hike expectations",
-      "summary": "Geopolitical tensions and Fed rate hikes may lead to sustained pressure on gold prices, impacting investment strategies and market dynamics.\nThe post Gold prices dip amid Iran tensions, Fed rate hike expectations appeared first on Crypto Briefing.",
-      "source": "Crypto Briefing",
-      "url": "https://cryptobriefing.com/gold-prices-dip-amid-iran-tensions-fed-rate-hike-expectations/",
-      "impact": "bearish",
-      "signal": "DOWN",
-      "impactPct": null
-    }
-  ],
+  "news": [],
   "speakers": [
     {
       "name": "A Long-Term View on the Costs of Shelter",
@@ -243,16 +232,16 @@ window.XAUUSD_DATA = {
   ],
   "levels": {
     "resistance": [
-      4316.63,
-      4346.52,
-      4377.45,
+      4286.82,
+      4287.43,
+      4288.41,
       4443.2
     ],
     "support": [
-      4255.81,
-      4238.37,
-      4224.88,
-      4194.99
+      4285.23,
+      4284.25,
+      4283.64,
+      4238.37
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -266,7 +255,7 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "Observed XAU momentum",
-      "level": "-0.01%",
+      "level": "-0.00%",
       "w": 0,
       "dir": "down"
     }
@@ -277,10 +266,6 @@ window.XAUUSD_DATA = {
     "yMin": 4250.14,
     "yMax": 4394.06,
     "points": [
-      {
-        "x": "2026-09-13",
-        "y": 4348.46
-      },
       {
         "x": "2026-09-14",
         "y": 4298.35
@@ -331,6 +316,10 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-09-26",
+        "y": 4286.21
+      },
+      {
+        "x": "2026-09-27",
         "y": 4286.2
       }
     ]
@@ -342,7 +331,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-26",
+        "x": "2026-09-27",
         "y": 0
       }
     ]
@@ -354,7 +343,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-26",
+        "x": "2026-09-27",
         "y": 0
       }
     ]
