@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-09-28T09:37:27+08:00",
+    "generatedAt": "2026-09-29T10:34:00+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-09-28",
-        "timestamp": "2026-09-28T09:37:27+08:00"
+        "detail": "latest daily bar 2026-09-29",
+        "timestamp": "2026-09-29T10:34:00+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-09-28T09:37:27+08:00"
+        "timestamp": "2026-09-29T10:34:00+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-09-28T09:37:36+08:00"
+        "timestamp": "2026-09-29T10:34:08+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-09-24",
-        "timestamp": "2026-09-28T09:37:36+08:00"
+        "detail": "latest 2026-09-25",
+        "timestamp": "2026-09-29T10:34:09+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "0 relevant recent items",
-        "timestamp": "2026-09-28T09:37:36+08:00"
+        "detail": "2 relevant recent items",
+        "timestamp": "2026-09-29T10:34:09+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-09-28T09:37:37+08:00"
+        "timestamp": "2026-09-29T10:34:09+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-09-28 09:37 MYT",
+  "updated": "2026-09-29 10:34 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4215.33,
-    "change": -70.89,
-    "changePct": -1.65,
-    "dayRange": "4,214.26 - 4,287.41",
-    "monthPct": -4.31,
-    "yearPct": -2.31,
+    "spot": 4137.01,
+    "change": 21.93,
+    "changePct": 0.53,
+    "dayRange": "4,112.09 - 4,137.29",
+    "monthPct": -5.03,
+    "yearPct": -4.13,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-09-28; rolling history used: 370 bars",
-    "latestDailyClose": 4215.33,
+    "note": "Latest provider daily bar: 2026-09-29; rolling history used: 370 bars",
+    "latestDailyClose": 4137.01,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-09-28"
+    "providerBarTime": "2026-09-29"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.180%",
-      "delta": "+7.0 bp",
-      "tone": "bad",
-      "note": "FRED DGS10 · 2026-09-24"
+      "value": "5.170%",
+      "delta": "-1.0 bp",
+      "tone": "good",
+      "note": "FRED DGS10 · 2026-09-25"
     },
     {
       "label": "Brent",
@@ -93,12 +93,12 @@ window.XAUUSD_DATA = {
     }
   ],
   "sentiment": {
-    "bias": "DOWNWARD",
-    "goldTone": "BEARISH",
-    "score": -0.659,
+    "bias": "MIXED",
+    "goldTone": "NEUTRAL",
+    "score": 0.133,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "DOWN",
+    "netSpeechSignal": "NEUTRAL",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -137,8 +137,44 @@ window.XAUUSD_DATA = {
       }
     ]
   },
-  "news": [],
+  "news": [
+    {
+      "time": "2026-09-28 02:01 UTC",
+      "title": "PRECIOUS-Fed tightening bets weigh on gold prices",
+      "summary": "Gold prices have taken a hit, influenced by rising oil rates that have sparked inflation fears and suggested further interest rate hikes may be on the horizon. Spot gold decreased by 0.7%, with US gold futures mirroring the trend. Analysts warned that escalat…",
+      "source": "The Times of India",
+      "url": "https://economictimes.indiatimes.com/markets/commodities/news/precious-fed-tightening-bets-weigh-on-gold-prices/articleshow/134529772.cms",
+      "impact": "bearish",
+      "signal": "DOWN",
+      "impactPct": null
+    },
+    {
+      "time": "2026-09-28 01:30 UTC",
+      "title": "Gold Falls on Expectations of Higher for Longer Fed Rates",
+      "summary": "Gold fell. Higher oil prices and strong U.S. industrial activity data reinforced expectations that the U.S. Federal Reserve may need to keep policy tighter for longer, ANZ said.",
+      "source": "Biztoc.com",
+      "url": "https://biztoc.com/x/00e2f545b75b0027",
+      "impact": "neutral",
+      "signal": "NEUTRAL",
+      "impactPct": null
+    }
+  ],
   "speakers": [
+    {
+      "name": "An Update on AI and the Economy",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "An Update on AI and the Economy Governor Lisa D. Cook At the Oakland Tech Week Opening Keynote, cohosted by the Kapor Center, Oakland, California",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/cook20260928a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
     {
       "name": "A Long-Term View on the Costs of Shelter",
       "role": "Federal Reserve speaker",
@@ -170,21 +206,6 @@ window.XAUUSD_DATA = {
       "impactPct": 0.0
     },
     {
-      "name": "The Final Chapter on Modernizing Bank Regulatory Stress Testing",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "The Final Chapter on Modernizing Bank Regulatory Stress Testing Watch Live Vice Chair for Supervision Michelle W. Bowman At the Luncheon of the Lord Mayor City of London at Mansion House, London, United Kingdom",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260918a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
-    },
-    {
       "name": "Initial Findings from Independent Review of Silicon Valley Bank",
       "role": "Federal Reserve speaker",
       "side": "neutral",
@@ -194,6 +215,21 @@ window.XAUUSD_DATA = {
       "date": "2026",
       "source": "Federal Reserve",
       "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260918b.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
+    {
+      "name": "The Final Chapter on Modernizing Bank Regulatory Stress Testing",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "The Final Chapter on Modernizing Bank Regulatory Stress Testing Watch Live Vice Chair for Supervision Michelle W. Bowman At the Luncheon of the Lord Mayor City of London at Mansion House, London, United Kingdom",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260918a.htm",
       "w": 0.0,
       "s": 0.0,
       "f": 0.0,
@@ -213,35 +249,20 @@ window.XAUUSD_DATA = {
       "s": 0.0,
       "f": 0.0,
       "impactPct": 0.0
-    },
-    {
-      "name": "Unlocking Opportunities for Workers and Entrepreneurs with a Criminal Record",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "Unlocking Opportunities for Workers and Entrepreneurs with a Criminal Record Watch Live Governor Michael S. Barr At the Second-Chance Lending Forum, Developing Evidence-Based Policy on Creditworthiness and Criminal History, Washington, D.C.",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/barr20260901a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
     }
   ],
   "levels": {
     "resistance": [
-      4286.74,
-      4287.27,
-      4288.03,
-      4432.62
+      4231.05,
+      4347.03,
+      4406.66,
+      4430.46
     ],
     "support": [
-      4285.46,
-      4284.7,
-      4284.17,
-      4214.26
+      4111.8,
+      4055.45,
+      3995.82,
+      3879.84
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -249,27 +270,23 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "+7.0 bp",
-      "w": 58,
-      "dir": "down"
+      "level": "-1.0 bp",
+      "w": 8,
+      "dir": "up"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "-1.65%",
-      "w": 100,
-      "dir": "down"
+      "level": "+0.53%",
+      "w": 35,
+      "dir": "up"
     }
   ],
   "priceSeries": {
     "label": "XAU/USD daily close (Twelve Data)",
     "unit": "USD / troy oz",
-    "yMin": 4195.55,
-    "yMax": 4399.91,
+    "yMin": 4083.27,
+    "yMax": 4411.94,
     "points": [
-      {
-        "x": "2026-09-15",
-        "y": 4293.8
-      },
       {
         "x": "2026-09-16",
         "y": 4264.07
@@ -320,7 +337,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-09-28",
-        "y": 4215.33
+        "y": 4115.08
+      },
+      {
+        "x": "2026-09-29",
+        "y": 4137.01
       }
     ]
   },
@@ -331,7 +352,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-28",
+        "x": "2026-09-29",
         "y": 0
       }
     ]
@@ -343,7 +364,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-28",
+        "x": "2026-09-29",
         "y": 0
       }
     ]
