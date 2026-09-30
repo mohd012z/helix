@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-09-29T10:34:00+08:00",
+    "generatedAt": "2026-09-30T10:04:41+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-09-29",
-        "timestamp": "2026-09-29T10:34:00+08:00"
+        "detail": "latest daily bar 2026-09-30",
+        "timestamp": "2026-09-30T10:04:41+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-09-29T10:34:00+08:00"
+        "timestamp": "2026-09-30T10:04:41+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-09-29T10:34:08+08:00"
+        "timestamp": "2026-09-30T10:04:49+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-09-25",
-        "timestamp": "2026-09-29T10:34:09+08:00"
+        "detail": "latest 2026-09-28",
+        "timestamp": "2026-09-30T10:04:50+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "2 relevant recent items",
-        "timestamp": "2026-09-29T10:34:09+08:00"
+        "detail": "1 relevant recent items",
+        "timestamp": "2026-09-30T10:04:50+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
-        "detail": "6 official listings",
-        "timestamp": "2026-09-29T10:34:09+08:00"
+        "detail": "5 official listings",
+        "timestamp": "2026-09-30T10:04:50+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-09-29 10:34 MYT",
+  "updated": "2026-09-30 10:04 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4137.01,
-    "change": 21.93,
-    "changePct": 0.53,
-    "dayRange": "4,112.09 - 4,137.29",
-    "monthPct": -5.03,
-    "yearPct": -4.13,
+    "spot": 4174.22,
+    "change": -7.78,
+    "changePct": -0.19,
+    "dayRange": "4,167.87 - 4,187.64",
+    "monthPct": -5.17,
+    "yearPct": -3.27,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-09-29; rolling history used: 370 bars",
-    "latestDailyClose": 4137.01,
+    "note": "Latest provider daily bar: 2026-09-30; rolling history used: 370 bars",
+    "latestDailyClose": 4174.22,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-09-29"
+    "providerBarTime": "2026-09-30"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.170%",
-      "delta": "-1.0 bp",
-      "tone": "good",
-      "note": "FRED DGS10 · 2026-09-25"
+      "value": "5.240%",
+      "delta": "+7.0 bp",
+      "tone": "bad",
+      "note": "FRED DGS10 · 2026-09-28"
     },
     {
       "label": "Brent",
@@ -93,12 +93,12 @@ window.XAUUSD_DATA = {
     }
   ],
   "sentiment": {
-    "bias": "MIXED",
-    "goldTone": "NEUTRAL",
-    "score": 0.133,
+    "bias": "DOWNWARD",
+    "goldTone": "BEARISH",
+    "score": -0.5,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "NEUTRAL",
+    "netSpeechSignal": "DOWN",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -139,27 +139,62 @@ window.XAUUSD_DATA = {
   },
   "news": [
     {
-      "time": "2026-09-28 02:01 UTC",
-      "title": "PRECIOUS-Fed tightening bets weigh on gold prices",
-      "summary": "Gold prices have taken a hit, influenced by rising oil rates that have sparked inflation fears and suggested further interest rate hikes may be on the horizon. Spot gold decreased by 0.7%, with US gold futures mirroring the trend. Analysts warned that escalat…",
-      "source": "The Times of India",
-      "url": "https://economictimes.indiatimes.com/markets/commodities/news/precious-fed-tightening-bets-weigh-on-gold-prices/articleshow/134529772.cms",
-      "impact": "bearish",
-      "signal": "DOWN",
-      "impactPct": null
-    },
-    {
-      "time": "2026-09-28 01:30 UTC",
-      "title": "Gold Falls on Expectations of Higher for Longer Fed Rates",
-      "summary": "Gold fell. Higher oil prices and strong U.S. industrial activity data reinforced expectations that the U.S. Federal Reserve may need to keep policy tighter for longer, ANZ said.",
-      "source": "Biztoc.com",
-      "url": "https://biztoc.com/x/00e2f545b75b0027",
+      "time": "2026-09-28 21:34 UTC",
+      "title": "Gold falls amid rising oil prices and higher US dollar",
+      "summary": "Gold hits seven-week low; silver follows suit and records a nearly 5 percent loss.",
+      "source": "Al Jazeera English",
+      "url": "https://www.aljazeera.com/economy/2026/9/28/gold-falls-amid-rising-oil-prices-and-higher-us-dollar",
       "impact": "neutral",
       "signal": "NEUTRAL",
       "impactPct": null
     }
   ],
   "speakers": [
+    {
+      "name": "Payments in the Age of AI Agents",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "Payments in the Age of AI Agents Watch Live Governor Christopher J. Waller At Sibos 2026, Miami, Florida",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20260928a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
+    {
+      "name": "Economic Conditions and Monetary Policy",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "Economic Conditions and Monetary Policy Watch Live Governor Michael S. Barr At the Detroit Economic Club, Detroit, Michigan",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/barr20260929a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
+    {
+      "name": "Opening Remarks",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "Opening Remarks Video Vice Chair for Supervision Michelle W. Bowman At the Community Bank Cyber Workshop, Denver, Colorado (via pre-recorded video)",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260929a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
     {
       "name": "An Update on AI and the Economy",
       "role": "Federal Reserve speaker",
@@ -189,80 +224,20 @@ window.XAUUSD_DATA = {
       "s": 0.0,
       "f": 0.0,
       "impactPct": 0.0
-    },
-    {
-      "name": "Discount Window Modernization and Treasury Market Functioning",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "Discount Window Modernization and Treasury Market Functioning Watch Live Vice Chair Philip N. Jefferson At the 2026 U.S. Treasury Market Conference, Federal Reserve Bank of New York, New York, New York",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/jefferson20260922a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
-    },
-    {
-      "name": "Initial Findings from Independent Review of Silicon Valley Bank",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "Initial Findings from Independent Review of Silicon Valley Bank Watch Live Vice Chair for Supervision Michelle W. Bowman At the Luncheon of the Lord Mayor City of London at Mansion House, London, United Kingdom",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260918b.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
-    },
-    {
-      "name": "The Final Chapter on Modernizing Bank Regulatory Stress Testing",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "The Final Chapter on Modernizing Bank Regulatory Stress Testing Watch Live Vice Chair for Supervision Michelle W. Bowman At the Luncheon of the Lord Mayor City of London at Mansion House, London, United Kingdom",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20260918a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
-    },
-    {
-      "name": "The Economic Outlook and Some Comments on My Policy Communication",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "The Economic Outlook and Some Comments on My Policy Communication Watch Live Governor Christopher J. Waller At Reuters NEXT Newsmaker Interview, Washington, D.C.",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/waller20260903a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
     }
   ],
   "levels": {
     "resistance": [
-      4231.05,
-      4347.03,
-      4406.66,
-      4430.46
+      4207.17,
+      4232.34,
+      4279.88,
+      4403.8
     ],
     "support": [
+      4134.46,
       4111.8,
-      4055.45,
-      3995.82,
-      3879.84
+      4086.92,
+      4061.75
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -270,15 +245,15 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "-1.0 bp",
-      "w": 8,
-      "dir": "up"
+      "level": "+7.0 bp",
+      "w": 58,
+      "dir": "down"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "+0.53%",
-      "w": 35,
-      "dir": "up"
+      "level": "-0.19%",
+      "w": 12,
+      "dir": "down"
     }
   ],
   "priceSeries": {
@@ -287,10 +262,6 @@ window.XAUUSD_DATA = {
     "yMin": 4083.27,
     "yMax": 4411.94,
     "points": [
-      {
-        "x": "2026-09-16",
-        "y": 4264.07
-      },
       {
         "x": "2026-09-17",
         "y": 4341.9
@@ -341,7 +312,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-09-29",
-        "y": 4137.01
+        "y": 4182.0
+      },
+      {
+        "x": "2026-09-30",
+        "y": 4174.22
       }
     ]
   },
@@ -352,7 +327,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-29",
+        "x": "2026-09-30",
         "y": 0
       }
     ]
@@ -364,7 +339,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-29",
+        "x": "2026-09-30",
         "y": 0
       }
     ]
