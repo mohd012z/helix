@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-09-30T10:04:41+08:00",
+    "generatedAt": "2026-10-01T10:06:19+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-09-30",
-        "timestamp": "2026-09-30T10:04:41+08:00"
+        "detail": "latest daily bar 2026-10-01",
+        "timestamp": "2026-10-01T10:06:19+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-09-30T10:04:41+08:00"
+        "timestamp": "2026-10-01T10:06:19+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-09-30T10:04:49+08:00"
+        "timestamp": "2026-10-01T10:06:27+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-09-28",
-        "timestamp": "2026-09-30T10:04:50+08:00"
+        "detail": "latest 2026-09-29",
+        "timestamp": "2026-10-01T10:06:28+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "1 relevant recent items",
-        "timestamp": "2026-09-30T10:04:50+08:00"
+        "detail": "0 relevant recent items",
+        "timestamp": "2026-10-01T10:06:28+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "5 official listings",
-        "timestamp": "2026-09-30T10:04:50+08:00"
+        "timestamp": "2026-10-01T10:06:28+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-09-30 10:04 MYT",
+  "updated": "2026-10-01 10:06 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4174.22,
-    "change": -7.78,
-    "changePct": -0.19,
-    "dayRange": "4,167.87 - 4,187.64",
-    "monthPct": -5.17,
-    "yearPct": -3.27,
+    "spot": 4156.88,
+    "change": 0.42,
+    "changePct": 0.01,
+    "dayRange": "4,139.78 - 4,164.58",
+    "monthPct": -3.7,
+    "yearPct": -3.67,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-09-30; rolling history used: 370 bars",
-    "latestDailyClose": 4174.22,
+    "note": "Latest provider daily bar: 2026-10-01; rolling history used: 370 bars",
+    "latestDailyClose": 4156.88,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-09-30"
+    "providerBarTime": "2026-10-01"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.240%",
-      "delta": "+7.0 bp",
+      "value": "5.260%",
+      "delta": "+2.0 bp",
       "tone": "bad",
-      "note": "FRED DGS10 · 2026-09-28"
+      "note": "FRED DGS10 · 2026-09-29"
     },
     {
       "label": "Brent",
@@ -93,12 +93,12 @@ window.XAUUSD_DATA = {
     }
   ],
   "sentiment": {
-    "bias": "DOWNWARD",
-    "goldTone": "BEARISH",
-    "score": -0.5,
+    "bias": "MIXED",
+    "goldTone": "NEUTRAL",
+    "score": -0.135,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "DOWN",
+    "netSpeechSignal": "NEUTRAL",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -137,19 +137,23 @@ window.XAUUSD_DATA = {
       }
     ]
   },
-  "news": [
-    {
-      "time": "2026-09-28 21:34 UTC",
-      "title": "Gold falls amid rising oil prices and higher US dollar",
-      "summary": "Gold hits seven-week low; silver follows suit and records a nearly 5 percent loss.",
-      "source": "Al Jazeera English",
-      "url": "https://www.aljazeera.com/economy/2026/9/28/gold-falls-amid-rising-oil-prices-and-higher-us-dollar",
-      "impact": "neutral",
-      "signal": "NEUTRAL",
-      "impactPct": null
-    }
-  ],
+  "news": [],
   "speakers": [
+    {
+      "name": "The Dual Mandate in Rural America",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "The Dual Mandate in Rural America Governor Lisa D. Cook At the 2026 Investing in Rural America Conference, Federal Reserve Bank of Richmond, Asheville, North Carolina",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/cook20260930a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
     {
       "name": "Payments in the Age of AI Agents",
       "role": "Federal Reserve speaker",
@@ -209,35 +213,20 @@ window.XAUUSD_DATA = {
       "s": 0.0,
       "f": 0.0,
       "impactPct": 0.0
-    },
-    {
-      "name": "A Long-Term View on the Costs of Shelter",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "A Long-Term View on the Costs of Shelter Watch Live Governor Michael S. Barr At âHousing Affordability 2026: A Community Development Summit,â hosted by the Federal Reserve Bank of Chicago, Chicago, Illinois",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/barr20260923a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
     }
   ],
   "levels": {
     "resistance": [
-      4207.17,
-      4232.34,
-      4279.88,
-      4403.8
+      4201.99,
+      4247.52,
+      4274.9,
+      4399.22
     ],
     "support": [
-      4134.46,
+      4129.08,
       4111.8,
-      4086.92,
-      4061.75
+      4101.7,
+      4056.17
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -245,15 +234,15 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "+7.0 bp",
-      "w": 58,
+      "level": "+2.0 bp",
+      "w": 16,
       "dir": "down"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "-0.19%",
-      "w": 12,
-      "dir": "down"
+      "level": "+0.01%",
+      "w": 0,
+      "dir": "up"
     }
   ],
   "priceSeries": {
@@ -262,10 +251,6 @@ window.XAUUSD_DATA = {
     "yMin": 4083.27,
     "yMax": 4411.94,
     "points": [
-      {
-        "x": "2026-09-17",
-        "y": 4341.9
-      },
       {
         "x": "2026-09-18",
         "y": 4377.25
@@ -316,7 +301,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-09-30",
-        "y": 4174.22
+        "y": 4156.46
+      },
+      {
+        "x": "2026-10-01",
+        "y": 4156.88
       }
     ]
   },
@@ -327,7 +316,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-30",
+        "x": "2026-10-01",
         "y": 0
       }
     ]
@@ -339,7 +328,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-09-30",
+        "x": "2026-10-01",
         "y": 0
       }
     ]
