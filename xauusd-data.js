@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-10-06T10:56:16+08:00",
+    "generatedAt": "2026-10-07T10:20:34+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-10-06",
-        "timestamp": "2026-10-06T10:56:16+08:00"
+        "detail": "latest daily bar 2026-10-07",
+        "timestamp": "2026-10-07T10:20:35+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-10-06T10:56:16+08:00"
+        "timestamp": "2026-10-07T10:20:35+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-10-06T10:56:24+08:00"
+        "timestamp": "2026-10-07T10:20:43+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-10-02",
-        "timestamp": "2026-10-06T10:56:24+08:00"
+        "detail": "latest 2026-10-05",
+        "timestamp": "2026-10-07T10:20:44+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "2 relevant recent items",
-        "timestamp": "2026-10-06T10:56:25+08:00"
+        "detail": "1 relevant recent items",
+        "timestamp": "2026-10-07T10:20:44+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-10-06T10:56:25+08:00"
+        "timestamp": "2026-10-07T10:20:44+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-10-06 10:56 MYT",
+  "updated": "2026-10-07 10:20 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4137.71,
-    "change": -3.34,
-    "changePct": -0.08,
-    "dayRange": "4,107.79 - 4,152.48",
-    "monthPct": -2.96,
-    "yearPct": -4.11,
+    "spot": 4144.74,
+    "change": -24.64,
+    "changePct": -0.59,
+    "dayRange": "4,140.02 - 4,169.82",
+    "monthPct": -4.54,
+    "yearPct": -3.95,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-10-06; rolling history used: 370 bars",
-    "latestDailyClose": 4137.71,
+    "note": "Latest provider daily bar: 2026-10-07; rolling history used: 370 bars",
+    "latestDailyClose": 4144.74,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-10-06"
+    "providerBarTime": "2026-10-07"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.280%",
-      "delta": "+4.0 bp",
+      "value": "5.310%",
+      "delta": "+3.0 bp",
       "tone": "bad",
-      "note": "FRED DGS10 · 2026-10-02"
+      "note": "FRED DGS10 · 2026-10-05"
     },
     {
       "label": "Brent",
@@ -95,7 +95,7 @@ window.XAUUSD_DATA = {
   "sentiment": {
     "bias": "DOWNWARD",
     "goldTone": "BEARISH",
-    "score": -0.282,
+    "score": -0.276,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
     "netSpeechSignal": "DOWN",
@@ -139,27 +139,32 @@ window.XAUUSD_DATA = {
   },
   "news": [
     {
-      "time": "2026-10-05 02:13 UTC",
-      "title": "Gold edges higher after weekly slide as weak jobs data ease Fed hike bets",
-      "summary": "Investing.com -- Gold prices edged higher on Monday after posting their biggest weekly decline since June, as a slowdown in the U.S. labor market eased expectations for another Federal Reserve rate hike, while elevated Treasury yields and rising oil prices ke…",
-      "source": "Biztoc.com",
-      "url": "https://biztoc.com/x/038924f2d8a5ad8f",
-      "impact": "bearish",
-      "signal": "DOWN",
-      "impactPct": null
-    },
-    {
-      "time": "2026-10-05 01:56 UTC",
-      "title": "Gold inches up as October Fed rate hike prospects fade",
-      "summary": "During early Monday trading in Asia, gold prices surged due to lackluster US job growth figures. This disappointing employment data notably diminished the Federal Reserve's likelihood of raising interest rates in October, prompting investors to pivot towards …",
+      "time": "2026-10-06 02:08 UTC",
+      "title": "Gold steady as firm dollar counters softer US rate-hike bets",
+      "summary": "Gold prices demonstrated stability amidst a stronger dollar, which countered the positive effects of moderating Federal Reserve rate hike anticipations. The price for spot gold remained steady at $4,141.81 per ounce, while US gold futures experienced a slight…",
       "source": "The Times of India",
-      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-inches-up-as-october-fed-rate-hike-prospects-fade/articleshow/134683767.cms",
+      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-steady-as-firm-dollar-counters-softer-us-rate-hike-bets/articleshow/134720923.cms",
       "impact": "bearish",
       "signal": "DOWN",
       "impactPct": null
     }
   ],
   "speakers": [
+    {
+      "name": "Modernizing the Regulatory and Supervisory Landscape",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "Modernizing the Regulatory and Supervisory Landscape Watch Live Vice Chair for Supervision Michelle W. Bowman At the 2026 Community Banking Research Conference, sponsored by the Federal Reserve System, the Conference of State Bank Supervisors, and the Federal ",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/bowman20261006a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
     {
       "name": "Modernizing Financial Regulation: Initial Observations from eSLR",
       "role": "Federal Reserve speaker",
@@ -234,35 +239,20 @@ window.XAUUSD_DATA = {
       "s": 0.0,
       "f": 0.0,
       "impactPct": 0.0
-    },
-    {
-      "name": "Economic Conditions and Monetary Policy",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "Economic Conditions and Monetary Policy Watch Live Governor Michael S. Barr At the Detroit Economic Club, Detroit, Michigan",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/barr20260929a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
     }
   ],
   "levels": {
     "resistance": [
-      4165.96,
-      4190.88,
-      4211.16,
-      4399.22
+      4199.61,
+      4229.84,
+      4275.75,
+      4384.53
     ],
     "support": [
-      4120.77,
+      4123.48,
       4107.79,
-      4100.49,
-      4075.58
+      4077.56,
+      4047.34
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -270,14 +260,14 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "+4.0 bp",
-      "w": 33,
+      "level": "+3.0 bp",
+      "w": 24,
       "dir": "down"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "-0.08%",
-      "w": 5,
+      "level": "-0.59%",
+      "w": 39,
       "dir": "down"
     }
   ],
@@ -287,10 +277,6 @@ window.XAUUSD_DATA = {
     "yMin": 4094.48,
     "yMax": 4307.34,
     "points": [
-      {
-        "x": "2026-09-24",
-        "y": 4275.28
-      },
       {
         "x": "2026-09-25",
         "y": 4286.74
@@ -341,7 +327,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-10-06",
-        "y": 4137.71
+        "y": 4169.39
+      },
+      {
+        "x": "2026-10-07",
+        "y": 4144.74
       }
     ]
   },
@@ -352,7 +342,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-06",
+        "x": "2026-10-07",
         "y": 0
       }
     ]
@@ -364,7 +354,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-06",
+        "x": "2026-10-07",
         "y": 0
       }
     ]
