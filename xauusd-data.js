@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-10-08T10:40:51+08:00",
+    "generatedAt": "2026-10-09T10:55:33+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-10-08",
-        "timestamp": "2026-10-08T10:40:51+08:00"
+        "detail": "latest daily bar 2026-10-09",
+        "timestamp": "2026-10-09T10:55:33+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-10-08T10:40:51+08:00"
+        "timestamp": "2026-10-09T10:55:34+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-10-08T10:41:00+08:00"
+        "timestamp": "2026-10-09T10:55:42+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-10-06",
-        "timestamp": "2026-10-08T10:41:01+08:00"
+        "detail": "latest 2026-10-07",
+        "timestamp": "2026-10-09T10:55:42+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
         "detail": "1 relevant recent items",
-        "timestamp": "2026-10-08T10:41:01+08:00"
+        "timestamp": "2026-10-09T10:55:42+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-10-08T10:41:01+08:00"
+        "timestamp": "2026-10-09T10:55:43+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-10-08 10:40 MYT",
+  "updated": "2026-10-09 10:55 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4141.64,
-    "change": 41.1,
-    "changePct": 1.0,
-    "dayRange": "4,100.43 - 4,142.51",
-    "monthPct": -5.38,
-    "yearPct": -4.02,
+    "spot": 4177.47,
+    "change": 45.56,
+    "changePct": 1.1,
+    "dayRange": "4,130.87 - 4,177.90",
+    "monthPct": -4.63,
+    "yearPct": -3.19,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-10-08; rolling history used: 370 bars",
-    "latestDailyClose": 4141.64,
+    "note": "Latest provider daily bar: 2026-10-09; rolling history used: 370 bars",
+    "latestDailyClose": 4177.47,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-10-08"
+    "providerBarTime": "2026-10-09"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.270%",
-      "delta": "-4.0 bp",
-      "tone": "good",
-      "note": "FRED DGS10 · 2026-10-06"
+      "value": "5.280%",
+      "delta": "+1.0 bp",
+      "tone": "bad",
+      "note": "FRED DGS10 · 2026-10-07"
     },
     {
       "label": "Brent",
@@ -93,12 +93,12 @@ window.XAUUSD_DATA = {
     }
   ],
   "sentiment": {
-    "bias": "UPWARD",
-    "goldTone": "BULLISH",
-    "score": 0.394,
+    "bias": "MIXED",
+    "goldTone": "NEUTRAL",
+    "score": 0.065,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "UP",
+    "netSpeechSignal": "NEUTRAL",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -139,17 +139,32 @@ window.XAUUSD_DATA = {
   },
   "news": [
     {
-      "time": "2026-10-07 01:58 UTC",
-      "title": "Gold flat as focus turns to Fed minutes",
-      "summary": "Gold prices remained steady as market participants look forward to insights from the Federal Reserve's upcoming meeting minutes. Spot gold hovered at $4,159.62 per ounce, while December futures were valued at $4,187.30. Amid ongoing inflation and recent slugg…",
+      "time": "2026-10-08 02:02 UTC",
+      "title": "Gold edges higher after hitting a two-month low",
+      "summary": "Gold prices are on the rise, up by 0.4% after a dip earlier this week. Investors are closely monitoring the upcoming interest rate decisions from the US Federal Reserve, with an 18% probability of a hike this month and 80% in December. Heightened geopolitical…",
       "source": "The Times of India",
-      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-flat-as-focus-turns-to-fed-minutes/articleshow/134753704.cms",
+      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-edges-higher-after-hitting-a-two-month-low/articleshow/134777720.cms",
       "impact": "neutral",
       "signal": "NEUTRAL",
       "impactPct": null
     }
   ],
   "speakers": [
+    {
+      "name": "The Signaling Value of the Summary of Economic Projections",
+      "role": "Federal Reserve speaker",
+      "side": "neutral",
+      "signal": "NEUTRAL",
+      "quote": "The Signaling Value of the Summary of Economic Projections Watch Live Governor Christopher J. Waller At the Istanbul Economic Forum, Central Bank of the Republic of TÃ¼rkiye, Istanbul, TÃ¼rkiye",
+      "impact": "Official Fed speech listing; stance is not automatically inferred.",
+      "date": "2026",
+      "source": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm",
+      "w": 0.0,
+      "s": 0.0,
+      "f": 0.0,
+      "impactPct": 0.0
+    },
     {
       "name": "Modernizing the Regulatory and Supervisory Landscape",
       "role": "Federal Reserve speaker",
@@ -224,35 +239,20 @@ window.XAUUSD_DATA = {
       "s": 0.0,
       "f": 0.0,
       "impactPct": 0.0
-    },
-    {
-      "name": "Payments in the Age of AI Agents",
-      "role": "Federal Reserve speaker",
-      "side": "neutral",
-      "signal": "NEUTRAL",
-      "quote": "Payments in the Age of AI Agents Watch Live Governor Christopher J. Waller At Sibos 2026, Miami, Florida",
-      "impact": "Official Fed speech listing; stance is not automatically inferred.",
-      "date": "2026",
-      "source": "Federal Reserve",
-      "url": "https://www.federalreserve.gov/newsevents/speech/waller20260928a.htm",
-      "w": 0.0,
-      "s": 0.0,
-      "f": 0.0,
-      "impactPct": 0.0
     }
   ],
   "levels": {
     "resistance": [
-      4159.65,
-      4218.78,
-      4267.74,
+      4151.99,
+      4172.06,
+      4197.84,
       4384.53
     ],
     "support": [
+      4106.13,
+      4080.35,
       4061.73,
-      4051.57,
-      4002.61,
-      3943.49
+      4060.28
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -260,14 +260,14 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "-4.0 bp",
-      "w": 33,
-      "dir": "up"
+      "level": "+1.0 bp",
+      "w": 8,
+      "dir": "down"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "+1.00%",
-      "w": 66,
+      "level": "+1.10%",
+      "w": 73,
       "dir": "up"
     }
   ],
@@ -277,10 +277,6 @@ window.XAUUSD_DATA = {
     "yMin": 4078.25,
     "yMax": 4308.49,
     "points": [
-      {
-        "x": "2026-09-26",
-        "y": 4286.21
-      },
       {
         "x": "2026-09-27",
         "y": 4286.21
@@ -331,7 +327,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-10-08",
-        "y": 4141.64
+        "y": 4131.92
+      },
+      {
+        "x": "2026-10-09",
+        "y": 4177.47
       }
     ]
   },
@@ -342,7 +342,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-08",
+        "x": "2026-10-09",
         "y": 0
       }
     ]
@@ -354,7 +354,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-08",
+        "x": "2026-10-09",
         "y": 0
       }
     ]
