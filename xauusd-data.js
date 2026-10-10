@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-10-09T10:55:33+08:00",
+    "generatedAt": "2026-10-10T10:18:01+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-10-09",
-        "timestamp": "2026-10-09T10:55:33+08:00"
+        "detail": "latest daily bar 2026-10-10",
+        "timestamp": "2026-10-10T10:18:02+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-10-09T10:55:34+08:00"
+        "timestamp": "2026-10-10T10:18:02+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-10-09T10:55:42+08:00"
+        "timestamp": "2026-10-10T10:18:10+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
-        "detail": "latest 2026-10-07",
-        "timestamp": "2026-10-09T10:55:42+08:00"
+        "detail": "latest 2026-10-08",
+        "timestamp": "2026-10-10T10:18:10+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
         "detail": "1 relevant recent items",
-        "timestamp": "2026-10-09T10:55:42+08:00"
+        "timestamp": "2026-10-10T10:18:11+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-10-09T10:55:43+08:00"
+        "timestamp": "2026-10-10T10:18:11+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-10-09 10:55 MYT",
+  "updated": "2026-10-10 10:18 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4177.47,
-    "change": 45.56,
-    "changePct": 1.1,
-    "dayRange": "4,130.87 - 4,177.90",
-    "monthPct": -4.63,
-    "yearPct": -3.19,
+    "spot": 4195.79,
+    "change": 0.56,
+    "changePct": 0.01,
+    "dayRange": "4,193.75 - 4,197.00",
+    "monthPct": -4.21,
+    "yearPct": -2.77,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-10-09; rolling history used: 370 bars",
-    "latestDailyClose": 4177.47,
+    "note": "Latest provider daily bar: 2026-10-10; rolling history used: 370 bars",
+    "latestDailyClose": 4195.79,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-10-09"
+    "providerBarTime": "2026-10-10"
   },
   "macro": [
     {
@@ -79,10 +79,10 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "US 10Y",
-      "value": "5.280%",
-      "delta": "+1.0 bp",
-      "tone": "bad",
-      "note": "FRED DGS10 · 2026-10-07"
+      "value": "5.220%",
+      "delta": "-6.0 bp",
+      "tone": "good",
+      "note": "FRED DGS10 · 2026-10-08"
     },
     {
       "label": "Brent",
@@ -93,12 +93,12 @@ window.XAUUSD_DATA = {
     }
   ],
   "sentiment": {
-    "bias": "MIXED",
-    "goldTone": "NEUTRAL",
-    "score": 0.065,
+    "bias": "UPWARD",
+    "goldTone": "BULLISH",
+    "score": 0.411,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "NEUTRAL",
+    "netSpeechSignal": "UP",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -139,13 +139,13 @@ window.XAUUSD_DATA = {
   },
   "news": [
     {
-      "time": "2026-10-08 02:02 UTC",
-      "title": "Gold edges higher after hitting a two-month low",
-      "summary": "Gold prices are on the rise, up by 0.4% after a dip earlier this week. Investors are closely monitoring the upcoming interest rate decisions from the US Federal Reserve, with an 18% probability of a hike this month and 80% in December. Heightened geopolitical…",
+      "time": "2026-10-09 01:49 UTC",
+      "title": "Gold nudges higher with inflation risks, Fed rate path in focus",
+      "summary": "On Friday, gold prices experienced a modest uptrend as investors weighed concerns about inflation alongside potential interest rate hikes by the Federal Reserve. Spot gold saw a 0.3% increase, while US gold futures for December rose by 0.4%. St. Louis Fed Pre…",
       "source": "The Times of India",
-      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-edges-higher-after-hitting-a-two-month-low/articleshow/134777720.cms",
-      "impact": "neutral",
-      "signal": "NEUTRAL",
+      "url": "https://economictimes.indiatimes.com/markets/commodities/news/gold-nudges-higher-with-inflation-risks-fed-rate-path-in-focus/articleshow/134804008.cms",
+      "impact": "bearish",
+      "signal": "DOWN",
       "impactPct": null
     }
   ],
@@ -243,16 +243,16 @@ window.XAUUSD_DATA = {
   ],
   "levels": {
     "resistance": [
-      4151.99,
-      4172.06,
-      4197.84,
-      4384.53
+      4224.52,
+      4253.81,
+      4300.64,
+      4375.41
     ],
     "support": [
-      4106.13,
-      4080.35,
-      4061.73,
-      4060.28
+      4148.4,
+      4101.58,
+      4072.29,
+      4061.73
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
   },
@@ -260,27 +260,23 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "US 10Y daily move",
-      "level": "+1.0 bp",
-      "w": 8,
-      "dir": "down"
+      "level": "-6.0 bp",
+      "w": 50,
+      "dir": "up"
     },
     {
       "label": "Observed XAU momentum",
-      "level": "+1.10%",
-      "w": 73,
+      "level": "+0.01%",
+      "w": 0,
       "dir": "up"
     }
   ],
   "priceSeries": {
     "label": "XAU/USD daily close (Twelve Data)",
     "unit": "USD / troy oz",
-    "yMin": 4078.25,
-    "yMax": 4308.49,
+    "yMin": 4089.1,
+    "yMax": 4207.22,
     "points": [
-      {
-        "x": "2026-09-27",
-        "y": 4286.21
-      },
       {
         "x": "2026-09-28",
         "y": 4115.08
@@ -331,7 +327,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-10-09",
-        "y": 4177.47
+        "y": 4195.23
+      },
+      {
+        "x": "2026-10-10",
+        "y": 4195.79
       }
     ]
   },
@@ -342,7 +342,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-09",
+        "x": "2026-10-10",
         "y": 0
       }
     ]
@@ -354,7 +354,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-09",
+        "x": "2026-10-10",
         "y": 0
       }
     ]
