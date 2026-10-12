@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-10-11T09:50:10+08:00",
+    "generatedAt": "2026-10-12T10:20:31+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-10-11",
-        "timestamp": "2026-10-11T09:50:10+08:00"
+        "detail": "latest daily bar 2026-10-12",
+        "timestamp": "2026-10-12T10:20:31+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-10-11T09:50:10+08:00"
+        "timestamp": "2026-10-12T10:20:31+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-10-11T09:50:18+08:00"
+        "timestamp": "2026-10-12T10:20:40+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
         "detail": "latest 2026-10-08",
-        "timestamp": "2026-10-11T09:50:19+08:00"
+        "timestamp": "2026-10-12T10:20:40+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
         "detail": "0 relevant recent items",
-        "timestamp": "2026-10-11T09:50:19+08:00"
+        "timestamp": "2026-10-12T10:20:40+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-10-11T09:50:19+08:00"
+        "timestamp": "2026-10-12T10:20:40+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-10-11 09:50 MYT",
+  "updated": "2026-10-12 10:20 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4195.9,
-    "change": 0.1,
-    "changePct": 0.0,
-    "dayRange": "4,195.75 - 4,196.00",
-    "monthPct": -3.41,
-    "yearPct": -2.76,
+    "spot": 4212.41,
+    "change": 16.56,
+    "changePct": 0.39,
+    "dayRange": "4,184.15 - 4,216.21",
+    "monthPct": -3.33,
+    "yearPct": -2.38,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-10-11; rolling history used: 370 bars",
-    "latestDailyClose": 4195.9,
+    "note": "Latest provider daily bar: 2026-10-12; rolling history used: 370 bars",
+    "latestDailyClose": 4212.41,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5597.23,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-10-11"
+    "providerBarTime": "2026-10-12"
   },
   "macro": [
     {
@@ -95,7 +95,7 @@ window.XAUUSD_DATA = {
   "sentiment": {
     "bias": "UPWARD",
     "goldTone": "BULLISH",
-    "score": 0.409,
+    "score": 0.457,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
     "netSpeechSignal": "UP",
@@ -232,15 +232,15 @@ window.XAUUSD_DATA = {
   ],
   "levels": {
     "resistance": [
-      4197.29,
-      4198.77,
-      4200.54,
-      4370.17
+      4196.48,
+      4197.11,
+      4198.21,
+      4315.6
     ],
     "support": [
-      4194.03,
-      4192.26,
-      4190.78,
+      4194.75,
+      4193.65,
+      4193.02,
       4061.73
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
@@ -255,21 +255,17 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "Observed XAU momentum",
-      "level": "+0.00%",
-      "w": 0,
+      "level": "+0.39%",
+      "w": 26,
       "dir": "up"
     }
   ],
   "priceSeries": {
     "label": "XAU/USD daily close (Twelve Data)",
     "unit": "USD / troy oz",
-    "yMin": 4089.09,
-    "yMax": 4207.34,
+    "yMin": 4087.1,
+    "yMax": 4225.84,
     "points": [
-      {
-        "x": "2026-09-29",
-        "y": 4182.0
-      },
       {
         "x": "2026-09-30",
         "y": 4156.46
@@ -320,7 +316,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-10-11",
-        "y": 4195.9
+        "y": 4195.85
+      },
+      {
+        "x": "2026-10-12",
+        "y": 4212.41
       }
     ]
   },
@@ -331,7 +331,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-11",
+        "x": "2026-10-12",
         "y": 0
       }
     ]
@@ -343,7 +343,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-11",
+        "x": "2026-10-12",
         "y": 0
       }
     ]
