@@ -43,6 +43,7 @@ export function adaptSnapshot(snapshot = {}) {
     events: calendar,
     news: Array.isArray(snapshot.news) ? snapshot.news.slice() : [],
     speakers: Array.isArray(snapshot.speakers) ? snapshot.speakers.slice() : [],
+    board: snapshot.board && typeof snapshot.board === 'object' ? snapshot.board : null,
     sourceStatus: meta.sourceStatus ?? {},
     sources
   };

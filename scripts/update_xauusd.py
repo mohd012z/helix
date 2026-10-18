@@ -93,7 +93,7 @@ def round3(x: float | None) -> float | None:
     return None if x is None or not math.isfinite(x) else round(x, 3)
 
 
-def td_time_series(api_key: str, symbol: str, outputsize: int = 370) -> list[dict]:
+def td_time_series(api_key: str, symbol: str, outputsize: int = 370) -> tuple[list[dict], str | None]:
     data = get_json(
         "https://api.twelvedata.com/time_series",
         params={
@@ -108,7 +108,7 @@ def td_time_series(api_key: str, symbol: str, outputsize: int = 370) -> list[dic
     vals = data.get("values") or []
     if not vals:
         raise SourceError(f"No time-series values returned for {symbol}")
-    return vals
+    return vals, data.get("name")
 
 
 def td_resolve_symbol(api_key: str, query: str, exact_names=()) -> str | None:
@@ -325,6 +325,71 @@ def source_entry(ok: bool, label: str, detail: str = "", timestamp: str | None =
     return {"ok": bool(ok), "label": label, "detail": detail, "timestamp": timestamp or now_local().isoformat(timespec="seconds")}
 
 
+# Market board: FX majors, minors/crosses, metals, digital assets.
+# Best-effort per symbol: each missing symbol is published as UNAVAILABLE
+# with the provider detail. Daily closes only — never a live quote.
+BOARD_SYMBOLS: list[tuple[str, str, str]] = [
+    ("EUR/USD", "fx", "major"), ("GBP/USD", "fx", "major"), ("USD/JPY", "fx", "major"),
+    ("USD/CHF", "fx", "major"), ("AUD/USD", "fx", "major"), ("USD/CAD", "fx", "major"),
+    ("NZD/USD", "fx", "major"),
+    ("EUR/GBP", "fx", "minor"), ("EUR/JPY", "fx", "minor"), ("GBP/JPY", "fx", "minor"),
+    ("AUD/JPY", "fx", "minor"), ("EUR/AUD", "fx", "minor"),
+    ("XAG/USD", "metal", "metal"),
+    ("BTC/USD", "digital", "digital"), ("ETH/USD", "digital", "digital"),
+]
+
+
+def collect_board(
+    api_key: str,
+    status: dict[str, dict],
+    *,
+    fetch=None,
+    sleep=None,
+    board_symbols: list[tuple[str, str, str]] = BOARD_SYMBOLS,
+) -> dict:
+    """Collect the desk board (FX majors/minors, metals, digital).
+
+    ``fetch(api_key, symbol, outputsize) -> (values, name|None)`` is injectable
+    for tests; ``sleep`` defaults to time.sleep resolved at call time so tests
+    can pace it. Each symbol is independent: a failure is recorded in
+    ``status`` and the entry stays ok=False with the provider detail —
+    nothing is fabricated or substituted.
+    """
+    if fetch is None:
+        fetch = td_time_series
+    if sleep is None:
+        sleep = time.sleep
+    entries: dict[str, dict] = {}
+    for symbol, asset_class, group in board_symbols:
+        entry: dict[str, Any] = {
+            "symbol": symbol, "assetClass": asset_class, "group": group,
+            "ok": False, "last": None, "changePct": None, "barDate": None, "detail": "",
+        }
+        try:
+            vals, _name = fetch(api_key, symbol, 2)
+            a, b = latest_pair(vals)
+            la, lb = f(a["close"]), f(b["close"])
+            entry.update(
+                ok=True,
+                last=round3(la) if group == "metal" else round(la, 5),
+                changePct=round2(pct_change(la, lb)),
+                barDate=str(a.get("datetime", ""))[:10],
+                detail=f"provider bar {str(a.get('datetime', ''))[:10]}",
+            )
+            status[f"board_{symbol.replace('/', '_')}"] = source_entry(True, f"Board {symbol}", f"provider bar {entry['barDate']}")
+        except Exception as exc:
+            entry["detail"] = str(exc)
+            status[f"board_{symbol.replace('/', '_')}"] = source_entry(False, f"Board {symbol}", str(exc))
+        entries[symbol] = entry
+        sleep(1.2)
+    return {
+        "label": "FX majors / minors, metals, digital assets — provider daily closes",
+        "priceType": "DAILY_CLOSE",
+        "note": "Daily reference closes for the desk board. Each symbol is independent: unavailable symbols are labelled, never substituted.",
+        "symbols": entries,
+    }
+
+
 def main() -> int:
     td_key = os.getenv("TWELVE_DATA_API_KEY", "").strip()
     fred_key = os.getenv("FRED_API_KEY", "").strip()
@@ -339,7 +404,7 @@ def main() -> int:
 
     # --- XAU/USD: mandatory ---
     try:
-        xau = td_time_series(td_key, "XAU/USD", 370)
+        xau, _xau_name = td_time_series(td_key, "XAU/USD", 370)
         latest, prev = latest_pair(xau)
         spot, prev_close = f(latest["close"]), f(prev["close"])
         change = spot - prev_close
@@ -363,7 +428,7 @@ def main() -> int:
         sym = td_resolve_symbol(td_key, "DXY", ("US Dollar Index", "U.S. Dollar Index"))
         if not sym:
             raise SourceError("No exact/confirmed DXY symbol found")
-        dxy = td_time_series(td_key, sym, 45)
+        dxy, _dxy_name = td_time_series(td_key, sym, 45)
         da, db = latest_pair(dxy)
         dv, dp = f(da["close"]), f(db["close"])
         dxy_pct = pct_change(dv, dp)
@@ -380,7 +445,7 @@ def main() -> int:
         bsym = td_resolve_commodity(td_key, "Brent")
         if not bsym:
             raise SourceError("Brent symbol not found in Twelve Data commodity catalog")
-        br = td_time_series(td_key, bsym, 3)
+        br, _br_name = td_time_series(td_key, bsym, 3)
         ba, bb = latest_pair(br)
         bv, bp = f(ba["close"]), f(bb["close"])
         bpc = pct_change(bv, bp)
@@ -389,6 +454,18 @@ def main() -> int:
     except Exception as exc:
         status["brent"] = source_entry(False, "Twelve Data Brent", str(exc))
         warnings.append("Brent unavailable for this run.")
+
+    # --- Market board: FX majors, minors/crosses, metals, digital assets ---
+    board = collect_board(td_key, status)
+    # XAU/USD is the desk's authority instrument: surface its verified daily
+    # close on the metals board too (same bar, same rounding as the hero).
+    board["symbols"]["XAU/USD"] = {
+        "symbol": "XAU/USD", "assetClass": "metal", "group": "metal",
+        "ok": True, "last": round2(spot), "changePct": round2(change_pct),
+        "barDate": str(latest.get("datetime", ""))[:10],
+        "detail": f"provider bar {str(latest.get('datetime', ''))[:10]}",
+    }
+    status["board_XAU_USD"] = source_entry(True, "Board XAU/USD", f"provider bar {str(latest.get('datetime', ''))[:10]}")
 
     # --- US 10Y from FRED: optional official macro source ---
     y10_item = {"label": "US 10Y", "value": "—", "delta": "configure FRED_API_KEY", "tone": "", "note": "FRED DGS10 not configured"}
@@ -488,6 +565,7 @@ def main() -> int:
         "news": news,
         "speakers": speakers,
         "levels": {"resistance": resist, "support": support, "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."},
+        "board": board,
         "calendar": [],
         "pressure": pressure,
         "priceSeries": price_series,

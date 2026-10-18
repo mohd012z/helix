@@ -9,6 +9,7 @@ import { dispatchRecalculation } from '../events/recalculate.mjs';
 import { renderAndRecordTradePlan } from './trade-plan-controller.mjs';
 import { buildTradePlanInput, normalizeMarketFeedState, mergeAdvanceModelOverrides } from './trade-plan-integration.mjs';
 import { renderAdvanceModelMarkup } from './advance-model-view.mjs';
+import { buildBoardGroups } from './market-board.mjs';
 
 const browser = typeof window !== 'undefined' && typeof document !== 'undefined';
 const $ = (s, p = document) => p.querySelector(s);
@@ -100,6 +101,47 @@ function renderReactionCards() {
   if (!counts.fx) hosts.fx.innerHTML = '<div class="empty-state">No measured FX event reaction yet.</div>';
   if (!counts.metal) hosts.metal.innerHTML = '<div class="empty-state">No measured metal event reaction yet.</div>';
   if (!counts.digital) hosts.digital.innerHTML = '<div class="empty-state">No measured digital-asset event reaction yet.</div>';
+}
+
+export function renderMarketBoard(data) {
+  const board = data.board ?? null;
+  const targets = [
+    ['BRIEF', $('#market-board')],
+    ['FX', $('#market-board-fx')],
+    ['METALS', $('#market-board-metals')],
+    ['DIGITAL ASSETS', $('#market-board-digital')]
+  ];
+  targets.forEach(([view, host]) => {
+    if (!host) return;
+    host.innerHTML = '';
+    const groups = board ? buildBoardGroups(view, board) : [];
+    if (!groups.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No board symbols in the current snapshot.';
+      host.appendChild(empty);
+      return;
+    }
+    groups.forEach(group => {
+      const section = document.createElement('div');
+      section.className = 'market-board-group';
+      const head = document.createElement('div');
+      head.className = 'market-board-head';
+      head.textContent = group.label;
+      section.appendChild(head);
+      group.rows.forEach(row => {
+        const el = document.createElement('div');
+        el.className = 'market-board-row' + (row.state === 'OK' ? ` tone-${row.change?.tone ?? 'flat'}` : ' tone-unavailable');
+        el.innerHTML = '<span class="mb-symbol"></span><span class="mb-price"></span><span class="mb-change"></span><span class="mb-detail"></span>';
+        el.querySelector('.mb-symbol').textContent = row.symbol;
+        el.querySelector('.mb-price').textContent = row.price;
+        el.querySelector('.mb-change').textContent = row.change ? row.change.text : '—';
+        el.querySelector('.mb-detail').textContent = row.detail;
+        section.appendChild(el);
+      });
+      host.appendChild(section);
+    });
+  });
 }
 
 function renderSnapshot(data) {
@@ -219,7 +261,7 @@ function bindTheme(){ const key='macro-desk-theme'; let saved=null; try{saved=lo
 
 function boot() {
   const raw = window.XAUUSD_DATA ?? {}, data = adaptSnapshot(raw);
-  renderSnapshot(data); renderReactionCards(); bindNavigation(); bindTheme();
+  renderSnapshot(data); renderReactionCards(); renderMarketBoard(data); bindNavigation(); bindTheme();
   let eventFeedState = 'SNAPSHOT';
   const marketFeedState = normalizeMarketFeedState(window.MACRO_MARKET_FEED_STATE ?? data.status);
   const planHistory = new Map();
