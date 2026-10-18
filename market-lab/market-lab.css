@@ -32,3 +32,36 @@ html.light{color-scheme:light;--bg:#f0f4f9;--panel:#fff;--panel2:#e9f1fa;--borde
 #compare-run{align-self:end}
 @media(max-width:630px){.compare-options{grid-template-columns:1fr 1fr}.compare-plot svg{height:240px}}
 @media(max-width:360px){.compare-options{grid-template-columns:1fr}}
+
+/* Industry × capitalization Matrix: original data-driven research view. */
+.matrix-scroll{max-height:min(65vh,680px);overflow:auto}
+.matrix-scroll table{min-width:900px;border-spacing:0;width:100%}
+.matrix-scroll th,.matrix-scroll td{padding:7px;border-bottom:1px solid var(--border)}
+.matrix-scroll thead th{position:sticky;top:0;z-index:2}
+.matrix-scroll td{text-align:center;vertical-align:middle}
+.matrix-scroll .mx-industry{text-align:left;min-width:165px;max-width:240px;white-space:normal;overflow-wrap:anywhere;background:var(--panel);position:sticky;left:0;z-index:1}
+.mx-industry strong{display:block;font-size:11px}
+.mx-industry small{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+.mx-value{min-width:104px;width:100%;min-height:56px;padding:6px;border-radius:8px;display:flex;gap:4px;align-items:center;justify-content:center;flex-direction:column}
+.mx-value strong{font-size:13px;white-space:nowrap}
+.mx-value small{font-size:9px;opacity:.88}
+.mx-empty{color:var(--muted)}
+.mx-positive{background:#11513e;color:#edfff4;border-color:#22755c}
+.mx-negative{background:#6a2335;color:#fff4f7;border-color:#924052}
+.mx-neutral{background:var(--panel2);color:var(--text);border-color:var(--border)}
+.mx-missing{background:#384152;color:#f0f1f5;border:1px dashed #9ba4b1}
+.mx-accessible.mx-positive{background:#144d78;color:#eff9ff;border-color:#3787ac}
+.mx-accessible.mx-negative{background:#834d0d;color:#fff9ef;border-color:#c47a25}
+.mx-accessible.mx-neutral{background:#363d56;color:#fff;border-color:#7b8bad}
+.matrix-pagination{justify-content:center;margin:14px 0;font-size:11px;color:var(--muted)}
+.matrix-details{box-shadow:none;max-height:280px;overflow:auto}
+.matrix-details h3{font-size:13px;margin:0 0 5px}
+.matrix-details p{color:var(--muted);font-size:11px}
+.matrix-detail-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.matrix-detail-symbol{font-size:11px;border-radius:6px;padding:7px 9px}
+.embed-input{font:12px/1.5 ui-monospace,Consolas,monospace;width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:12px;margin:9px 0 13px;border-radius:9px;min-height:85px;resize:vertical}
+.map-embed-host{margin-top:15px;border:1px dashed var(--border);border-radius:12px;min-height:100px;overflow:hidden}
+.map-embed-host:empty{display:none}
+.map-embed-host iframe{display:block;border:0;width:100%;height:520px;background:var(--panel2)}
+.map-external-link{display:block;padding:10px 12px;font-size:11px}
+@media(max-width:630px){.matrix-scroll{max-height:60vh}.matrix-scroll .mx-industry{min-width:135px}.map-embed-host iframe{height:400px}}
