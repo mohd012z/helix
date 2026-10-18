@@ -16,6 +16,8 @@
       <button type="button" data-nav="screener">▤ Screener</button>
       <button type="button" data-nav="charts">▥ Charts</button>
       <button type="button" data-nav="heatmap">▦ Heatmap</button>
+      <button type="button" data-nav="matrix">▥ Matrix</button>
+      <button type="button" data-nav="maps">▧ Hosted Maps</button>
       <button type="button" data-nav="compare">◫ Compare</button>
       <button type="button" data-nav="watchlist">☆ Watchlist</button>
       <button type="button" data-nav="sources">◎ Sources</button>
@@ -194,6 +196,59 @@
         <h2>Monthly return study</h2>
         <div id="compare-monthly" class="table-scroll"></div>
         <p class="subtitle">Month-end comparisons require a recorded close in the immediately preceding calendar month; gaps are not backfilled. Partial months may be present in imported files.</p>
+      </section>
+    </section>
+
+    <section data-page="matrix" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Industry × market-cap Matrix</h2>
+          <p class="subtitle">Original, locally computed breadth study. Each cell contains imported tickers in one industry and cap tier. Missing values are shown as unavailable, not zero.</p></div>
+          <span class="pill">IMPORTED SECURITIES ONLY</span>
+        </div>
+        <div class="filters">
+          <label>Metric<select id="matrix-metric">
+            <option value="changePct">Reported change (%)</option>
+            <option value="drawdown52">Distance from 52-week high (%)</option>
+            <option value="aboveLow52">Distance above 52-week low (%)</option>
+            <option value="pe">Reported P/E</option>
+            <option value="volume">Reported volume</option>
+          </select></label>
+          <label>Sector<select id="matrix-sector"><option value="ALL">All imported sectors</option></select></label>
+          <label>Palette<select id="matrix-palette"><option value="standard">Standard</option><option value="accessible">Colorblind-friendly</option></select></label>
+          <label>Industry search<input id="matrix-search" placeholder="Search industry" maxlength="90"></label>
+        </div>
+        <p id="matrix-status" class="source-status" role="status" aria-live="polite">Import stock rows from the Screener tab to populate the Matrix.</p>
+        <div class="table-scroll matrix-scroll"><table id="matrix-table">
+          <thead><tr><th>Sector · industry</th><th>Mega ≥$200B</th><th>Large ≥$10B</th><th>Mid ≥$2B</th><th>Small ≥$300M</th><th>Micro</th><th>Unknown cap</th></tr></thead>
+          <tbody id="matrix-body"></tbody>
+        </table></div>
+        <div class="tool-row matrix-pagination">
+          <button type="button" id="matrix-previous">← Previous industries</button>
+          <span id="matrix-page">No industry rows</span>
+          <button type="button" id="matrix-next">Next industries →</button>
+        </div>
+        <div id="matrix-details" class="panel matrix-details" aria-live="polite">Select a Matrix cell to inspect its contributing securities and missing values.</div>
+        <p class="subtitle">Market-cap tiers are user-interface conventions, not a statement of any exchange classification. Cell statistics use the median of available values. The Matrix is not representative of the full market unless your source covers it.</p>
+      </section>
+    </section>
+
+    <section data-page="maps" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head"><div><h2>Finviz-hosted Maps · optional embed</h2>
+          <p class="subtitle">Generate your own map code on Finviz using its public Maps → Embed Map control. Paste that code here to preview in a separate frame.</p></div>
+          <span class="pill">THIRD-PARTY HOSTED CONTENT</span>
+        </div>
+        <div class="tool-row"><a href="https://finviz.com/map" target="_blank" rel="noopener noreferrer">Open the official Finviz Maps generator ↗</a></div>
+        <label for="map-embed-input">Paste the official iframe snippet or Finviz map URL</label>
+        <textarea id="map-embed-input" class="embed-input" rows="3" spellcheck="false" placeholder="Paste the complete iframe code copied from Finviz Maps"></textarea>
+        <div class="tool-row">
+          <button type="button" id="map-embed-load" class="primary">Preview authorized map</button>
+          <button type="button" id="map-embed-clear">Remove map</button>
+        </div>
+        <p id="map-embed-status" class="source-status" role="status" aria-live="polite">No map loaded. The page makes no third-party request until you click Preview.</p>
+        <div id="map-embed-host" class="map-embed-host"></div>
+        <p class="subtitle">Only HTTPS map URLs hosted by Finviz are accepted; the pasted HTML is never inserted. Finviz controls availability, embed permissions, content, refresh cadence, tracking, and any sign-in requirements. This page does not bypass their service or extract their map data.</p>
       </section>
     </section>
 
