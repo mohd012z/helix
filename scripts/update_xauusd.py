@@ -432,6 +432,22 @@ TRANSIENT_BOARD_ERRORS = (
 )
 
 
+def fetch_mandatory_xau(
+    api_key: str, *, fetch=None, sleep=None, cooldown_seconds: float = 65.0
+) -> tuple[list[dict], str | None]:
+    """One spaced retry for a *transient* 429, never a fabricated fallback."""
+    if fetch is None:
+        fetch = td_time_series
+    if sleep is None:
+        sleep = time.sleep
+    try:
+        return fetch(api_key, "XAU/USD", 370)
+    except RateLimitError:
+        print("XAU DAILY CLOSE: 429 received; waiting 65s for rolling credit window before one retry.", file=sys.stderr)
+        sleep(cooldown_seconds)
+        return fetch(api_key, "XAU/USD", 370)
+
+
 def is_transient_board_error(detail: str) -> bool:
     """Treat credit-window/network failures as transient; plan denial is final."""
     reason = str(detail).lower()
@@ -559,7 +575,7 @@ def main() -> int:
 
     # --- XAU/USD: mandatory ---
     try:
-        xau, _xau_name = td_time_series(td_key, "XAU/USD", 370)
+        xau, _xau_name = fetch_mandatory_xau(td_key)
         latest, prev = latest_pair(xau)
         spot, prev_close = f(latest["close"]), f(prev["close"])
         change = spot - prev_close
