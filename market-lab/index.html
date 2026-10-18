@@ -81,6 +81,11 @@
           <label>Sort by<select id="sort-field"><option value="symbol">Symbol</option><option value="price">Price</option><option value="changePct">Change %</option><option value="marketCap">Market cap</option><option value="volume">Volume</option><option value="pe">P/E</option></select></label>
           <label>Order<select id="sort-dir"><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
         </div>
+        <div class="tool-row">
+          <label for="screen-view">Results view</label>
+          <select id="screen-view" aria-label="Screener results view"><option value="table">Table</option><option value="charts">Charts (requires matching OHLC)</option></select>
+          <span class="pill">CHARTS NEVER SIMULATED</span>
+        </div>
         <div class="tool-row"><label class="screen-only" for="preset-name">Preset name</label><input id="preset-name" maxlength="45" placeholder="Preset name">
           <button id="save-preset" type="button">Save filters</button>
           <label class="screen-only" for="presets">Saved filters</label><select id="presets"><option value="">Choose preset</option></select>
@@ -88,10 +93,12 @@
           <button id="reset-filters" type="button">Clear filters</button>
         </div>
         <p id="screener-status" class="source-status" role="status" aria-live="polite">No stock dataset loaded.</p>
-        <div class="table-scroll"><table>
+        <div id="screener-table" class="table-scroll"><table>
           <thead><tr><th>Watch</th><th>Symbol</th><th>Company</th><th>Sector</th><th>Price</th><th>Change %</th><th>Volume</th><th>Market cap</th><th>P/E</th></tr></thead>
           <tbody id="screener-body"><tr><td colspan="9" class="empty">Import a permitted market dataset to begin.</td></tr></tbody>
         </table></div>
+        <div id="screen-charts" class="screen-grid" hidden aria-label="Charts for matching imported stocks"></div>
+        <p id="screen-chart-summary" class="source-status" hidden></p>
       </section>
     </section>
 
@@ -105,6 +112,22 @@
             <label class="screen-only" for="chart-layout">Panel layout</label>
             <select id="chart-layout"><option value="1">1 chart</option><option value="2">2 charts</option><option value="4">4 charts</option></select>
           </div>
+        </div>
+        <div class="tool-row">
+          <label for="chart-template">Chart template</label>
+          <select id="chart-template" aria-label="Reusable chart template"></select>
+          <button id="apply-chart-template" type="button">Apply template</button>
+          <label for="chart-bars">Bars</label>
+          <select id="chart-bars"><option>30</option><option>60</option><option selected>90</option><option>120</option><option>240</option><option>500</option></select>
+          <label for="chart-palette">Palette</label>
+          <select id="chart-palette"><option value="calm">Calm</option><option value="classic">Classic</option><option value="contrast">High contrast</option><option value="mono">Monochrome</option></select>
+        </div>
+        <div class="tool-row">
+          <label for="ohlc-symbol">OHLC symbol</label>
+          <select id="ohlc-symbol"><option value="">No imported OHLC</option></select>
+          <label for="chart-template-name">Save current chart</label>
+          <input id="chart-template-name" maxlength="45" placeholder="New template name">
+          <button id="save-chart-template" type="button">Save chart template</button>
         </div>
         <div class="tool-row">
           <label><input type="checkbox" id="sma-toggle" checked> SMA 5 & 20</label>
