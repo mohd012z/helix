@@ -93,16 +93,27 @@ jobs:
           node --check macro/events/trade-plan.mjs
           node --check macro/events/trade-plan-revisions.mjs
           node --check macro/ui/advance-model-view.mjs
+          node --check macro/ui/market-board.mjs
           node --check macro/ui/trade-plan-view.mjs
           node --check macro/ui/trade-plan-controller.mjs
           node --check macro/ui/trade-plan-integration.mjs
           node --check macro/ui/runtime-safety.js
           node --check macro/ui/app.mjs
 
+      - name: Install Python dependencies for collector tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Check Python syntax and collector tests
         run: |
           python --version
           python -m py_compile scripts/*.py
+          # Board contract is enforced whenever the published snapshot carries
+          # a board (always, once the board pipeline lands on main).
+          if grep -q '"board"' xauusd-data.js 2>/dev/null; then
+            python scripts/verify_board.py
+          fi
           if [ -d "scripts/event_history" ]; then
             python -m py_compile scripts/event_history/*.py
           fi

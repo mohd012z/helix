@@ -50,3 +50,19 @@ test('unknown fields remain null instead of fabricated', () => {
   assert.equal(out.instruments['EUR/USD'].price, null);
   assert.equal(out.instruments['BTC/USD'].price, null);
 });
+
+test('market board passes through verbatim and defaults to null when absent', () => {
+  const board = {
+    label: 'b',
+    priceType: 'DAILY_CLOSE',
+    symbols: { 'EUR/USD': { symbol: 'EUR/USD', group: 'major', ok: true, last: 1.18, changePct: -0.1, barDate: '2026-10-17' } }
+  };
+  const withBoard = adaptSnapshot({ meta: {}, price: {}, board, sources: [] });
+  assert.equal(withBoard.board, board, 'board object must not be mutated or cloned into a different identity contract');
+  assert.equal(withBoard.board.symbols['EUR/USD'].last, 1.18);
+
+  const without = adaptSnapshot({ meta: {}, price: {}, sources: [] });
+  assert.equal(without.board, null);
+  const bad = adaptSnapshot({ meta: {}, price: {}, board: 'nope', sources: [] });
+  assert.equal(bad.board, null);
+});
