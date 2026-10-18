@@ -22,9 +22,11 @@ on:
 permissions:
   contents: write
 
+# Prevent the daily publisher from racing PR provider verification.
+# Do not cancel live provider runs mid-request.
 concurrency:
-  group: xauusd-daily-snapshot
-  cancel-in-progress: true
+  group: helix-live-twelve-data
+  cancel-in-progress: false
 
 jobs:
   update:
