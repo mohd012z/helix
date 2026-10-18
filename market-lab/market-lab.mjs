@@ -3,13 +3,14 @@ import {
   normalizeDailyCloses, sma, rsi, assessSnapshot, exportCsv
 } from './core.mjs';
 import { CHART_PRESETS, getTemplate, validateChartTemplate, normalizeSymbolCandles, availableScreenCharts } from './chart-templates.mjs';
+import { initComparison } from './compare-view.mjs';
 
 const $=id=>document.getElementById(id);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const paint=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
 const snapshot=window.XAUUSD_DATA??null;
 const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set(),presets:{},chartTemplates:{},ohlcBySymbol:{},sample:false,snapshotQuality:assessSnapshot(snapshot?.meta)};
-const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',watchlist:'Saved watchlist',sources:'Data sources'};
+const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',watchlist:'Saved watchlist',compare:'Historical comparison',sources:'Data sources'};
 const STORE_KEY='helix-market-lab-v1';
 const RESERVED_NAMES=new Set(['__proto__','constructor','prototype']);
 const SAMPLE=[
@@ -51,6 +52,7 @@ function nav(name){
   if(name==='charts')renderCharts();
   if(name==='heatmap')renderHeatmap();
   if(name==='watchlist')renderWatchlist();
+  if(name==='compare')comparisonController.refresh();
   if(name==='sources')renderSources();
 }
 function make(tag,className,text){
@@ -337,7 +339,7 @@ async function loadCandles(file){
     renderChartSelectors();
     const active=$('ohlc-symbol').value;
     state.candles=mapping[active]??[];
-    renderCharts();renderScreenCharts();renderSources();
+    renderCharts();renderScreenCharts();renderSources();comparisonController.refresh();
   }catch(error){paint('chart-feedback',`OHLC rejected: ${error.message}. Previous series retained.`);}
 }
 function csvDownload(){
@@ -373,6 +375,22 @@ function checkPrice(){
 }
 restore();
 snapshotInit();
+const comparisonController = initComparison({
+  getSeries: () => {
+    const records=Object.create(null);
+    for(const [symbol,candles] of Object.entries(state.ohlcBySymbol)) {
+      records[symbol]=candles.map(c=>({date:c.date,close:c.close}));
+    }
+    if(snapshot?.meta?.verified===true && snapshot?.meta?.seed!==true &&
+       snapshot?.meta?.sourceStatus?.xau?.ok===true && state.history.length>0) {
+      records['HELIX.XAU/USD']=state.history.map(p=>({date:p.date,close:p.close}));
+    }
+    return records;
+  },
+  getWatchlist: () => [...state.watch],
+  getProvenance: () => `HELIX XAU snapshot: ${state.snapshotQuality.state}; imported OHLC remains unverified.`,
+});
+comparisonController.refresh();
 renderPresetList();
 renderStockFilters();
 renderScreener();
