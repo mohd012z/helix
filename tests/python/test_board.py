@@ -8,6 +8,64 @@ def fake_values(symbol, closes, dates):
             {"datetime": dates[1], "close": str(closes[1])}]
 
 
+class RateLimitTest(unittest.TestCase):
+    """A 429 must fail fast (no retry) and surface as RateLimitError —
+    immediate retries cannot create credits that the minute window does not
+    yet hold."""
+
+    def test_http_429_fails_fast_without_retry(self):
+        import scripts.update_xauusd as up
+
+        calls = []
+
+        class FakeResp:
+            status_code = 429
+            def raise_for_status(self):
+                raise up.SourceError("429")
+            def json(self):
+                return {}
+
+        orig = up.requests.get
+        try:
+            def fake_get(url, params=None, headers=None, timeout=None):
+                calls.append(url)
+                return FakeResp()
+            up.requests.get = fake_get
+            with self.assertRaises(up.RateLimitError):
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(len(calls), 1, "429 must not be retried")
+        finally:
+            up.requests.get = orig
+
+    def test_body_rate_limit_message_fails_fast(self):
+        import scripts.update_xauusd as up
+
+        calls = []
+
+        class FakeResp:
+            status_code = 200
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return {"status": "error", "message": "The request has exceeded the rate limit."}
+
+        orig = up.requests.get
+        try:
+            def fake_get(url, params=None, headers=None, timeout=None):
+                calls.append(url)
+                return FakeResp()
+            up.requests.get = fake_get
+            with self.assertRaises(up.RateLimitError):
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(len(calls), 1)
+        finally:
+            up.requests.get = orig
+
+    def test_rate_limit_is_a_source_error(self):
+        import scripts.update_xauusd as up
+        self.assertTrue(issubclass(up.RateLimitError, up.SourceError))
+
+
 class CollectBoardTest(unittest.TestCase):
     def test_board_inventory_covers_desk_scope(self):
         # XAU/USD is intentionally NOT fetched here: the caller injects the

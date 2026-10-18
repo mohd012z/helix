@@ -39,6 +39,11 @@ class SourceError(RuntimeError):
     pass
 
 
+class RateLimitError(SourceError):
+    """Provider credit/minute limit hit. Immediate retries cannot help;
+    callers fail fast and label the symbol UNAVAILABLE."""
+
+
 def now_local() -> datetime:
     return datetime.now(TZ)
 
@@ -51,11 +56,22 @@ def get_json(url: str, *, params=None, headers=None, retries: int = 3) -> dict:
     for attempt in range(retries):
         try:
             r = requests.get(url, params=params, headers=h, timeout=TIMEOUT)
+            if r.status_code == 429:
+                raise RateLimitError(f"429 rate limit (attempt {attempt + 1}/{retries})")
             r.raise_for_status()
             data = r.json()
             if isinstance(data, dict) and data.get("status") == "error":
-                raise SourceError(data.get("message") or str(data))
+                msg = str(data.get("message") or data)
+                # Some plans return rate-limit errors in the JSON body with
+                # status 200 (Twelve Data: "The maximum number of calls per
+                # minute has been reached"). Detect by message, fail fast, no retry.
+                low = msg.lower()
+                if "rate limit" in low or "limit reached" in low or "per minute" in low or "maximum number of calls" in low:
+                    raise RateLimitError(msg)
+                raise SourceError(msg)
             return data
+        except RateLimitError:
+            raise
         except Exception as exc:
             last = exc
             if attempt + 1 < retries:
@@ -346,14 +362,19 @@ def collect_board(
     fetch=None,
     sleep=None,
     board_symbols: list[tuple[str, str, str]] = BOARD_SYMBOLS,
+    pace_seconds: float = 10.0,
 ) -> dict:
     """Collect the desk board (FX majors/minors, metals, digital).
 
     ``fetch(api_key, symbol, outputsize) -> (values, name|None)`` is injectable
-    for tests; ``sleep`` defaults to time.sleep resolved at call time so tests
-    can pace it. Each symbol is independent: a failure is recorded in
-    ``status`` and the entry stays ok=False with the provider detail —
-    nothing is fabricated or substituted.
+    for tests; ``sleep`` defaults to time.sleep resolved at call time.
+    ``pace_seconds`` fits the free-tier credit limit (8 credits/min): 15
+    symbols at 10s spacing = 6/min, under the limit even with pre-board
+    XAU/DXY/Brent credits sharing the first minute. A 429 fails fast
+    (RateLimitError from get_json, no retry) and that symbol is labelled
+    UNAVAILABLE; it self-heals on the next run. Never block a load on long
+    retries. Matches BACKFILL_PACE_MS=10000 used for the 8-credit/min
+    backfill.
     """
     if fetch is None:
         fetch = td_time_series
@@ -381,7 +402,7 @@ def collect_board(
             entry["detail"] = str(exc)
             status[f"board_{symbol.replace('/', '_')}"] = source_entry(False, f"Board {symbol}", str(exc))
         entries[symbol] = entry
-        sleep(1.2)
+        sleep(pace_seconds)
     return {
         "label": "FX majors / minors, metals, digital assets — provider daily closes",
         "priceType": "DAILY_CLOSE",
