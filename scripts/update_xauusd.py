@@ -420,6 +420,127 @@ def collect_board(
     }
 
 
+
+# The verify_board.py release contract remains 12 of 16 genuinely available
+# symbols. A temporary provider outage can be retried once, but absent or
+# plan-restricted prices may not be substituted, cached or marked OK.
+BOARD_MIN_OK = 12
+TRANSIENT_BOARD_ERRORS = (
+    "429", "rate limit", "per minute", "limit reached", "timeout", "timed out",
+    "502", "503", "504", "connection reset", "connection aborted",
+    "temporarily unavailable", "service unavailable",
+)
+
+
+def is_transient_board_error(detail: str) -> bool:
+    """Treat credit-window/network failures as transient; plan denial is final."""
+    reason = str(detail).lower()
+    if any(word in reason for word in (
+        "plan", "subscription", "not supported", "not available on",
+        "invalid symbol", "access denied", "permission", "upgrade",
+        "daily quota", "daily limit", "monthly limit",
+    )):
+        return False
+    return any(word in reason for word in TRANSIENT_BOARD_ERRORS)
+
+
+def recover_transient_board(
+    api_key: str,
+    board: dict,
+    status: dict[str, dict],
+    *,
+    fetch=None,
+    sleep=None,
+    minimum_ok: int = BOARD_MIN_OK,
+    max_retries: int = 3,
+    cooldown_seconds: float = 65.0,
+    pace_seconds: float = 10.0,
+) -> int:
+    """Recovery for an incomplete board, not an alternative contract.
+
+    Only retry bounded transient failures when the real provider reported an
+    outage or rate limit. A full rolling-credit-window cooldown precedes
+    the retry batch; never immediately hammer a provider 429.
+    Return successful *new* observations. Permanent denials remain unavailable.
+    """
+    if fetch is None:
+        fetch = td_time_series
+    if sleep is None:
+        sleep = time.sleep
+    entries = board.get("symbols", {})
+    ok = sum(entry.get("ok") is True for entry in entries.values())
+    if ok >= minimum_ok:
+        return 0
+    retryable = [
+        (symbol, entry) for symbol, entry in entries.items()
+        if entry.get("ok") is False
+        and is_transient_board_error(entry.get("detail", ""))
+    ][:max(0, max_retries)]
+    if not retryable:
+        print("BOARD RECOVERY: no transient candidates; remaining symbols require provider coverage.", file=sys.stderr)
+        return 0
+
+    print(
+        "BOARD RECOVERY: %d/%d OK; waiting for provider credit window before "
+        "retrying up to %d transient failures" % (ok, len(entries), len(retryable)),
+        file=sys.stderr,
+    )
+    sleep(cooldown_seconds)
+    recovered = 0
+    for index, (symbol, entry) in enumerate(retryable):
+        if ok >= minimum_ok:
+            break
+        if index:
+            sleep(pace_seconds)
+        try:
+            vals, _name = fetch(api_key, symbol, 2)
+            a, b = latest_pair(vals)
+            close, prior = f(a["close"]), f(b["close"])
+            if not all(math.isfinite(v) and v > 0 for v in (close, prior)):
+                raise SourceError("Non-finite or non-positive provider daily closes")
+            bar_date = str(a.get("datetime", ""))[:10]
+            if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", bar_date):
+                raise SourceError("Provider daily close is missing a valid bar date")
+            entry.update(
+                ok=True,
+                last=round3(close) if entry.get("group") == "metal" else round(close, 5),
+                changePct=round2(pct_change(close, prior)),
+                barDate=bar_date,
+                detail=f"provider bar {bar_date} (recovered after cooldown)",
+            )
+            status[f"board_{symbol.replace('/', '_')}"] = source_entry(
+                True, f"Board {symbol}", entry["detail"]
+            )
+            ok += 1
+            recovered += 1
+            print(f"BOARD RECOVERY: {symbol} verified; board coverage now {ok}/{len(entries)}")
+        except Exception as exc:
+            entry["detail"] = f"{entry['detail']} | cooldown retry failed: {exc}"
+            status[f"board_{symbol.replace('/', '_')}"] = source_entry(
+                False, f"Board {symbol}", entry["detail"]
+            )
+            print(f"BOARD RECOVERY: {symbol} still unavailable: {exc}", file=sys.stderr)
+            if isinstance(exc, RateLimitError):
+                # Stop immediately: additional requests cannot restore credits.
+                break
+    return recovered
+
+
+def print_board_coverage(board: dict, *, minimum_ok: int = BOARD_MIN_OK) -> None:
+    """Safe release diagnostics: no access tokens, no invented price values."""
+    entries = board.get("symbols", {})
+    ok = sum(entry.get("ok") is True for entry in entries.values())
+    print(f"BOARD COVERAGE: {ok}/{len(entries)} verified; contract minimum {minimum_ok}")
+    for symbol, entry in entries.items():
+        if entry.get("ok") is not True:
+            reason = str(entry.get("detail") or "No provider detail")
+            # Keep CI stdout safe from extremely long provider echoes.
+            reason = re.sub(r"(?i)(apikey|api_key|token|secret)=([^&\\s]+)", r"\\1=[REDACTED]", reason)
+            print(f"BOARD UNAVAILABLE: {symbol}: {reason[:180]}")
+
+
+
+
 def main() -> int:
     td_key = os.getenv("TWELVE_DATA_API_KEY", "").strip()
     fred_key = os.getenv("FRED_API_KEY", "").strip()
@@ -500,6 +621,9 @@ def main() -> int:
         "detail": f"provider bar {str(latest.get('datetime', ''))[:10]}",
     }
     status["board_XAU_USD"] = source_entry(True, "Board XAU/USD", f"provider bar {str(latest.get('datetime', ''))[:10]}")
+
+    recover_transient_board(td_key, board, status)
+    print_board_coverage(board)
 
     # --- US 10Y from FRED: optional official macro source ---
     y10_item = {"label": "US 10Y", "value": "—", "delta": "configure FRED_API_KEY", "tone": "", "note": "FRED DGS10 not configured"}
