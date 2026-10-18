@@ -304,5 +304,41 @@ class MandatoryGoldCooldownTest(unittest.TestCase):
         self.assertEqual(attempts,[1])
 
 
+class BoardContractDiagnosticsTest(unittest.TestCase):
+    def test_11_of_16_failure_names_the_unavailable_symbols_without_secret_text(self):
+        import json
+        from scripts.verify_board import CANONICAL, verify_snapshot_text, MIN_OK
+        self.assertEqual(MIN_OK,12)
+        board={"priceType":"DAILY_CLOSE","symbols":{}}
+        for i,symbol in enumerate(CANONICAL):
+            success=i<11
+            board["symbols"][symbol]={
+                "ok":success,
+                "last":1.1 if success else None,
+                "changePct":0.2 if success else None,
+                "barDate":"2026-10-17" if success else None,
+                "detail":"429 rate limit" if i==11 else (
+                    "plan does not include this symbol, apikey=SECRET" if not success else "valid"
+                ),
+            }
+        text="window.XAUUSD_DATA = "+json.dumps({"board":board})+";"
+        errors=verify_snapshot_text(text)
+        self.assertIn("only 11/16 symbols OK, minimum is 12",errors)
+        self.assertTrue(any("RATE_LIMITED" in message for message in errors))
+        self.assertTrue(any("PLAN_OR_SYMBOL_RESTRICTED" in message for message in errors))
+        self.assertFalse(any("SECRET" in message for message in errors))
+
+    def test_contract_rejects_boolean_prices_and_nonrecord_entries(self):
+        import json
+        from scripts.verify_board import CANONICAL, verify_snapshot_text
+        symbols={symbol:{"ok":True,"last":1.0,"changePct":0.1,"barDate":"2026-10-17"} for symbol in CANONICAL}
+        symbols["EUR/USD"]["last"]=True
+        symbols["ETH/USD"]="not a record"
+        text="window.XAUUSD_DATA = "+json.dumps({"board":{"priceType":"DAILY_CLOSE","symbols":symbols}})+";"
+        problems=verify_snapshot_text(text)
+        self.assertTrue(any("EUR/USD: ok=True" in item for item in problems))
+        self.assertTrue(any("ETH/USD: entry must be an object" in item for item in problems))
+
+
 if __name__ == "__main__":
     unittest.main()
