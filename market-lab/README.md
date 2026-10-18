@@ -201,3 +201,28 @@ For a future optional PyTorch module, keep model output separate from measured p
 - The new hosted embed has **not** been tested against a real member-generated embed URL. Full production GitHub Pages, physical phone layouts and live third-party iframe rendering are still unverified. Keep PR #33 in Draft.
 
 **Further requirements before feature equivalence:** provider-approved market universe and normalized reporting currency, historical fundamental updates, licensed intraday/extended-hours streaming, chart/heatmap accessibility audit, persisted per-user views with authentication, and opt-in server-side alert delivery. The embedded Finviz map, when authorized and available, is Finviz-hosted content, not a license to redistribute its underlying data.
+
+## Phase 4: actual browser release gates (18 October 2026)
+
+HELIX now has an independent [Chromium browser CI workflow](../.github/workflows/market-lab-browser.yml) on pull requests affecting Market Lab UI and its data snapshot. It uses the official Playwright container with an exact package version (`1.64.0`), launches the actual HTML+JS+CSS from an isolated local Node HTTP server, and blocks **all** third-party network traffic from the browser. The test does not scrape Finviz, does not request quotes, and uses only fictional fixtures.
+
+**Scenarios covered on all three widths:** phone portrait (390×844, mobile/touch), tablet (820×1180, touch), and desktop (1440×900). Assertions check navigation availability and no document-level horizontal overflow; fictional sample display and labels; importing permitted local stock JSON and checking Matrix statistics; accessible Matrix palette and cell drilldown; importing *synthetic* OHLC series and verifying comparison chart, ranking and correlation tables; rejection of hostile map-embed hosts with no network requests; opt-in frame creation for allowed URLs; and removal of the frame. Browser runtime exceptions fail the build.
+
+Evidence from the first successful full-page run (before the subsequent currency-disclosure edit):
+- GitHub Actions run: https://github.com/mohd012z/helix/actions/runs/39129747281
+- Browser screenshots: https://github.com/mohd012z/helix/actions/runs/39129747281/artifacts/12137770735
+- Browser log recorded PASS for all 3 viewports and confirmed no outside network requests. These are **emulated Chromium viewport/device checks**, not physical Safari/iOS or Android Chrome tests.
+- HELIX VEYRA CI and Migration Gate passed on the same tested head. The independent live-provider check returned `429 rate limit` while fetching XAU; it is not proof of a page defect. A previous PR head `848935e` had all three older workflows passing.
+
+For manual reproduction from a checkout:
+```sh
+npm install --prefix tests/browser --ignore-scripts --no-audit --no-fund
+npx --prefix tests/browser playwright install chromium
+node tests/browser/market-lab-smoke.mjs
+```
+
+The browser workflow uses `mcr.microsoft.com/playwright:v1.64.0-noble` to match its browser binary to the pinned Playwright library. Screenshot artifacts are attached to GitHub Actions runs for 7 days. GitHub Pages continues to deploy **only from main**, so this Draft PR is not an independently accessible production URL.
+
+**Release is still held:** no physical mobile device verification, no source-backed real Finviz member iframe payload, no authenticated/licensed real-time stock data, no accessible screen-reader audit, and no deployment validation on production Pages. Do not merge until all required branch policy and source verification checks are satisfied.
+
+**Imported currency warning:** HELIX currently assumes values called `marketCap` represent USD and does not convert exchange rates. For non-USD data, tier assignments and `$` formatting may be wrong; use normalized/authorized USD values or treat the classification as unverified. This warning now appears inside both Screener and Matrix views.
