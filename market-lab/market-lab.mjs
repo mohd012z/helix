@@ -2,12 +2,13 @@ import {
   parseTabular, normalizeStocks, screenStocks, groupHeatmap, normalizeCandles,
   normalizeDailyCloses, sma, rsi, assessSnapshot, exportCsv
 } from './core.mjs';
+import { CHART_PRESETS, getTemplate, validateChartTemplate, normalizeSymbolCandles, availableScreenCharts } from './chart-templates.mjs';
 
 const $=id=>document.getElementById(id);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const paint=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
 const snapshot=window.XAUUSD_DATA??null;
-const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set(),presets:{},sample:false,snapshotQuality:assessSnapshot(snapshot?.meta)};
+const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set(),presets:{},chartTemplates:{},ohlcBySymbol:{},sample:false,snapshotQuality:assessSnapshot(snapshot?.meta)};
 const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',watchlist:'Saved watchlist',sources:'Data sources'};
 const STORE_KEY='helix-market-lab-v1';
 const SAMPLE=[
@@ -20,7 +21,7 @@ const nf=(value,digits=2)=>value==null?'—':Number(value).toLocaleString('en-US
 const money=value=>value==null?'—':(Math.abs(value)>=1e12?'$'+nf(value/1e12,2)+'T':Math.abs(value)>=1e9?'$'+nf(value/1e9,2)+'B':Math.abs(value)>=1e6?'$'+nf(value/1e6,2)+'M':'$'+nf(value,2));
 const tone=value=>value==null?'':value>0?'trend-up':value<0?'trend-down':'';
 const safeStore=()=>{
-  try {localStorage.setItem(STORE_KEY,JSON.stringify({watch:[...state.watch],presets:state.presets,theme:document.documentElement.classList.contains('light')?'light':'dark'}));}
+  try {localStorage.setItem(STORE_KEY,JSON.stringify({watch:[...state.watch],presets:state.presets,chartTemplates:state.chartTemplates,theme:document.documentElement.classList.contains('light')?'light':'dark'}));}
   catch { /* Browsers can disable local storage: page remains functional in-memory. */ }
 };
 function restore() {
@@ -29,6 +30,14 @@ function restore() {
     if(Array.isArray(saved.watch)) state.watch=new Set(saved.watch.filter(s=>typeof s==='string'&&/^[A-Z0-9.^/_-]{1,20}$/.test(s)).slice(0,300));
     if(saved.presets&&typeof saved.presets==='object'&&!Array.isArray(saved.presets)){
       state.presets=Object.fromEntries(Object.entries(saved.presets).filter(([k,v])=>typeof k==='string'&&k.length<46&&v&&typeof v==='object').slice(0,30));
+    }
+    if(saved.chartTemplates&&typeof saved.chartTemplates==='object'&&!Array.isArray(saved.chartTemplates)){
+      const safe={};
+      for(const [key,value] of Object.entries(saved.chartTemplates).slice(0,20)){
+        if(typeof key!=='string'||key.length>45||Object.hasOwn(CHART_PRESETS,key))continue;
+        try{safe[key]=validateChartTemplate(value);}catch{}
+      }
+      state.chartTemplates=safe;
     }
     if(saved.theme==='light')document.documentElement.classList.add('light');
   } catch { /* Invalid persisted settings are ignored. */ }
@@ -92,10 +101,16 @@ function addSvg(parent,type,attributes={},text){
   return node;
 }
 function showEmpty(host,message){host.replaceChildren(make('div','no-data',message));}
-function renderSvg(host,series,{mode='line',title='Historical series',sma:showSma=false,showRsi=false}={}){
+function renderSvg(host,series,{mode='line',title='Historical series',sma:showSma=false,showRsi=false,bars=90,palette='calm'}={}){
+  const colors={
+    calm:{line:'#6ce0d3',up:'#4edaac',down:'#fd718e',sma5:'#e9be79',sma20:'#6ea8ff'},
+    classic:{line:'#f2ae55',up:'#32c18e',down:'#ed5577',sma5:'#e9be79',sma20:'#9c8aff'},
+    contrast:{line:'#fbdf5a',up:'#3de4fb',down:'#ff8b49',sma5:'#ffffff',sma20:'#ff60ee'},
+    mono:{line:'#dddddd',up:'#ffffff',down:'#878787',sma5:'#aaaaaa',sma20:'#707070'},
+  }[palette]??{line:'#6ce0d3',up:'#4edaac',down:'#fd718e',sma5:'#e9be79',sma20:'#6ea8ff'};
   host.replaceChildren();
   if(!Array.isArray(series)||series.length===0){showEmpty(host,'No validated price history available for this view.');return;}
-  const items=series.slice(-90);
+  const items=series.slice(-Math.max(5,Math.min(500,Number.isInteger(bars)?bars:90)));
   if(mode==='candles'&&items.some(p=>!Number.isFinite(p.open)||!Number.isFinite(p.high)||!Number.isFinite(p.low))){
     showEmpty(host,'Candlestick chart unavailable: genuine OHLC is required.');return;
   }
@@ -118,16 +133,16 @@ function renderSvg(host,series,{mode='line',title='Historical series',sma:showSm
   if(mode==='candles'){
     const candleW=Math.max(2,Math.min(13,plotW/Math.max(items.length,1)*0.65));
     items.forEach((p,i)=>{
-      const c=p.close>=p.open?'var(--green)':'var(--red)';
+      const c=p.close>=p.open?colors.up:colors.down;
       addSvg(svg,'line',{x1:x(i),x2:x(i),y1:y(p.high),y2:y(p.low),stroke:c,'stroke-width':1.5});
       addSvg(svg,'rect',{x:x(i)-candleW/2,y:Math.min(y(p.open),y(p.close)),width:candleW,height:Math.max(1,Math.abs(y(p.open)-y(p.close))),fill:c});
     });
   }else{
     const d=items.map((p,i)=>`${i?'L':'M'} ${x(i).toFixed(2)} ${y(p.close).toFixed(2)}`).join(' ');
-    addSvg(svg,'path',{d,fill:'none',stroke:'var(--accent)','stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'});
+    addSvg(svg,'path',{d,fill:'none',stroke:colors.line,'stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'});
   }
   if(showSma){
-    for(const [period,color] of [[5,'var(--amber)'],[20,'var(--blue)']]){
+    for(const [period,color] of [[5,colors.sma5],[20,colors.sma20]]){
       const values=sma(items.map(p=>p.close),period);
       const d=values.map((value,i)=>value==null?'':`${i===period-1?'M':'L'} ${x(i).toFixed(2)} ${y(value).toFixed(2)}`).filter(Boolean).join(' ');
       if(d)addSvg(svg,'path',{d,stroke:color,'stroke-width':1.8,fill:'none'});
