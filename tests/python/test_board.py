@@ -77,6 +77,41 @@ class CollectBoardTest(unittest.TestCase):
         self.assertEqual(groups.count("digital"), 2)
         self.assertEqual(len(set(s for s, _, _ in BOARD_SYMBOLS)), len(BOARD_SYMBOLS))
 
+    def test_settle_waits_for_preboard_window_to_clear(self):
+        events = []
+
+        def fetch(api_key, symbol, outputsize):
+            events.append("fetch")
+            return fake_values(symbol, [1.1842, 1.1867], ["2026-10-17", "2026-10-16"]), "EUR/USD"
+
+        def sleep(s):
+            events.append(("sleep", s))
+
+        # 0s elapsed since pre-board -> full 60s window settle before any fetch
+        collect_board("KEY", {}, fetch=fetch, sleep=sleep,
+                      board_symbols=[("EUR/USD", "fx", "major")],
+                      elapsed_since_preboard=0.0)
+        self.assertEqual(events[0], ("sleep", 60.0), "settle must precede every fetch")
+        self.assertEqual(events[1], "fetch")
+
+    def test_settle_shortens_as_preboard_window_elapses(self):
+        sleeps = []
+        collect_board("KEY", {},
+                      fetch=lambda k, s, n: (fake_values(s, [1.0, 1.0], ["2026-10-17", "2026-10-16"]), s),
+                      sleep=sleeps.append,
+                      board_symbols=[("EUR/USD", "fx", "major")],
+                      elapsed_since_preboard=40.0)
+        self.assertEqual(sleeps[0], 20.0, "settle = window - elapsed (40 -> 20s)")
+
+    def test_settle_is_zero_once_window_fully_elapsed(self):
+        sleeps = []
+        collect_board("KEY", {},
+                      fetch=lambda k, s, n: (fake_values(s, [1.0, 1.0], ["2026-10-17", "2026-10-16"]), s),
+                      sleep=sleeps.append,
+                      board_symbols=[("EUR/USD", "fx", "major")],
+                      elapsed_since_preboard=70.0)
+        self.assertEqual(sleeps[0], 10.0, "no settle sleep; first sleep is the per-symbol pace")
+
     def test_successful_symbols_carry_daily_close_and_pct(self):
         calls = []
 
