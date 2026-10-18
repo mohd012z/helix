@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>XAU//DESK — Market Board</title>
+<style>
+:root{--bg:#080d14;--panel:#0f1722;--panel2:#131e2b;--line:#223245;--text:#edf3f8;--muted:#8ca0b6;--gold:#e7b64f;--good:#45d397;--bad:#ff647e;--warn:#efc15a}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{background-image:radial-gradient(900px 500px at 9% -10%,color-mix(in srgb,var(--gold) 11%,transparent),transparent),radial-gradient(700px 420px at 95% -8%,color-mix(in srgb,var(--gold) 5%,transparent))}
+.wrap{max-width:1060px;margin:0 auto;padding:26px 18px 60px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.brand{font-weight:900;letter-spacing:.14em;font-size:15px}
+.brand span{color:var(--gold)}
+.sub{margin-top:6px;color:var(--muted);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:5px 10px;font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--muted)}
+.pill.fresh{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.pill.stale{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.hero{display:flex;align-items:baseline;gap:12px;margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(150deg,color-mix(in srgb,var(--panel) 98%,transparent),color-mix(in srgb,var(--panel2) 94%,transparent))}
+.hero .lbl{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--muted)}
+.hero .val{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hero .chg{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.hero .note{margin-left:auto;color:var(--muted);font-size:9.5px;text-align:right;line-height:1.5}
+.up{color:var(--good)}.down{color:var(--bad)}.flat{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.group{border:1px solid var(--line);border-radius:14px;background:linear-gradient(150deg,color-mix(in srgb,var(--panel) 98%,transparent),color-mix(in srgb,var(--panel2) 94%,transparent));padding:12px 14px;min-width:0}
+.group h2{margin:0 0 10px;font-size:10px;font-weight:900;letter-spacing:.14em;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:8.5px;font-weight:800;letter-spacing:.1em;color:var(--muted);text-align:right;padding:0 4px 7px;border-bottom:1px solid var(--line)}
+th:first-child{text-align:left}
+td{padding:7px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);font-size:12px;text-align:right}
+td:first-child{text-align:left;font-weight:800;font-size:11px;letter-spacing:.02em}
+tr:last-child td{border-bottom:none}
+tr.unavailable{opacity:.55}
+tr.unavailable td{color:var(--muted);font-weight:400;font-size:10.5px}
+.empty{border:1px dashed var(--line);border-radius:10px;color:var(--muted);padding:16px;font-size:11px;line-height:1.6}
+.foot{margin-top:16px;color:var(--muted);font-size:9.5px;line-height:1.7}
+.foot strong{color:var(--text)}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.hero .note{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="brand">XAU//DESK <span>MARKET BOARD</span></div>
+      <div class="sub">FX majors &amp; crosses · Metals · Digital assets — provider daily closes</div>
+    </div>
+    <div class="meta">
+      <span class="pill">DAILY CLOSE</span>
+      <span id="freshness" class="pill">—</span>
+      <span id="updated" class="pill">—</span>
+    </div>
+  </div>
+  <div class="hero">
+    <span class="lbl">XAU/USD</span>
+    <span id="xau-price" class="val">—</span>
+    <span id="xau-change" class="chg">—</span>
+    <span class="note">Latest value is a provider DAILY CLOSE<br>reference bar — not a streaming quote</span>
+  </div>
+  <div id="board" class="grid"></div>
+  <div class="foot">
+    <strong>Reading this board:</strong> prices are the provider's latest daily close bars (Twelve Data), refreshed daily around 07:10 MYT.
+    A row shown dimmed with a reason is <strong>UNAVAILABLE</strong> from the provider at run time (rate-limit window or plan-gated symbol) — it is labelled, never substituted or fabricated.
+    Educational reference, not a trade instruction.
+  </div>
+</div>
+<script src="./xauusd-data.js"></script>
+<script>
+(function (global) {
+  'use strict';
+
+  var GROUPS = [
+    { id: 'major', label: 'FX MAJORS' },
+    { id: 'minor', label: 'FX MINORS / CROSSES' },
+    { id: 'metal', label: 'METALS' },
+    { id: 'digital', label: 'DIGITAL ASSETS' }
+  ];
+
+  function digits(symbol) {
+    var s = String(symbol);
+    if (s.indexOf('/JPY') !== -1) return 3;
+    if (s.indexOf('XAU') === 0) return 2;
+    if (s.indexOf('XAG') === 0) return 3;
+    if (s.indexOf('X') === 0) return 2;      // other metals
+    if (s.indexOf('BTC') === 0 || s.indexOf('ETH') === 0) return 2;
+    return 5;                                  // FX
+  }
+
+  function fmtPrice(symbol, value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    var d = digits(symbol);
+    return Number(value).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function fmtPct(value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return { text: '—', tone: 'flat' };
+    var n = Number(value);
+    return { text: (n > 0 ? '+' : '') + n.toFixed(2) + '%', tone: n > 0 ? 'up' : n < 0 ? 'down' : 'flat' };
+  }
+
+  function fmtRow(symbol, entry) {
+    if (!entry || entry.ok !== true || entry.last == null) {
+      return { symbol: symbol, state: 'UNAVAILABLE', price: '—', change: null,
+               detail: entry && entry.detail ? String(entry.detail) : 'Not in current snapshot' };
+    }
+    return { symbol: symbol, state: 'OK', price: fmtPrice(symbol, entry.last),
+             change: fmtPct(entry.changePct), detail: entry.barDate ? String(entry.barDate) : '' };
+  }
+
+  function freshness(data) {
+    var gen = data && data.meta && data.meta.generatedAt;
+    if (!gen) return { label: 'NO SNAPSHOT', cls: '' };
+    var hours = (Date.now() - new Date(gen).getTime()) / 36e5;
+    var staleAfter = (data.meta.staleAfterHours != null) ? Number(data.meta.staleAfterHours) : 30;
+    return { label: hours <= staleAfter ? 'FRESH' : 'STALE', cls: hours <= staleAfter ? 'fresh' : 'stale' };
+  }
+
+  function formatMyt(iso) {
+    if (!iso) return 'Updated —';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return 'Updated ' + iso;
+    var s = new Intl.DateTimeFormat('en-MY', { timeZone: 'Asia/Kuala_Lumpur', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+    return 'Updated ' + s + ' MYT';
+  }
+
+  function rowElement(row) {
+    var tr = document.createElement('tr');
+    if (row.state !== 'OK') tr.className = 'unavailable';
+    var cells = [
+      [tr, 'td', row.symbol],
+      [tr, 'td', row.price],
+      [tr, 'td', row.change ? row.change.text : '—'],
+      [tr, 'td', row.state === 'OK' ? row.detail : row.detail]
+    ];
+    cells.forEach(function (c) {
+      var td = document.createElement(c[1]);
+      td.textContent = c[2];
+      c[0].appendChild(td);
+    });
+    if (row.change) {
+      var priceTd = tr.querySelectorAll('td')[1];
+      var chgTd = tr.querySelectorAll('td')[2];
+      priceTd.className = row.change.tone === 'flat' ? '' : row.change.tone;
+      chgTd.className = row.change.tone;
+    }
+    return tr;
+  }
+
+  function renderBoard(host, board) {
+    host.innerHTML = '';
+    var symbols = (board && typeof board.symbols === 'object' && board.symbols) ? board.symbols : {};
+    var any = Object.keys(symbols).length > 0;
+    if (!any) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'This snapshot has no market board yet. It is generated on the next daily run (around 07:10 MYT) and will appear here automatically.';
+      host.appendChild(e);
+      return;
+    }
+    GROUPS.forEach(function (g) {
+      var rows = Object.keys(symbols).filter(function (s) {
+        return symbols[s] && symbols[s].symbol === s && symbols[s].group === g.id;
+      }).sort().map(function (s) { return fmtRow(s, symbols[s]); });
+      if (!rows.length) return;
+      var section = document.createElement('div');
+      section.className = 'group';
+      var h = document.createElement('h2');
+      h.textContent = g.label;
+      section.appendChild(h);
+      var table = document.createElement('table');
+      var head = document.createElement('tr');
+      ['SYMBOL', 'LAST', 'Δ DAY', 'BAR DATE'].forEach(function (t, i) {
+        var th = document.createElement('th');
+        th.textContent = t;
+        head.appendChild(th);
+      });
+      table.appendChild(head);
+      rows.forEach(function (r) { table.appendChild(rowElement(r)); });
+      section.appendChild(table);
+      host.appendChild(section);
+    });
+  }
+
+  function boot() {
+    var data = global.XAUUSD_DATA || null;
+    var board = data && typeof data.board === 'object' ? data.board : null;
+    var meta = (data && data.meta) || {};
+    document.getElementById('freshness').textContent = freshness(data).label;
+    document.getElementById('freshness').className = 'pill ' + freshness(data).cls;
+    document.getElementById('updated').textContent = formatMyt(meta.generatedAt || data && data.updated);
+    var price = (data && data.price) || {};
+    var last = price.latestDailyClose != null ? price.latestDailyClose : price.spot;
+    var p = fmtPrice('XAU/USD', last);
+    document.getElementById('xau-price').textContent = p === '—' ? '—' : '$' + p;
+    var chgEl = document.getElementById('xau-change');
+    if (price.change != null && price.changePct != null) {
+      var pct = fmtPct(price.changePct);
+      chgEl.textContent = (pct.tone === 'up' ? '+' : '') + Number(price.change).toFixed(2) + ' • ' + pct.text;
+      chgEl.className = 'chg ' + pct.tone;
+    } else {
+      chgEl.textContent = 'no verified daily bar in this snapshot';
+      chgEl.className = 'chg flat';
+    }
+    renderBoard(document.getElementById('board'), board);
+  }
+
+  global.XAUDeskBoardPage = { fmtRow: fmtRow, fmtPrice: fmtPrice, fmtPct: fmtPct, renderBoard: renderBoard, freshness: freshness };
+
+  if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  }
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+</body>
+</html>

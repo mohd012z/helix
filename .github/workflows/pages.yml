@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - 'index.html'
+      - 'board.html'
       - 'xauusd-data.js'
       - 'macro-preview.html'
       - 'macro/**'
@@ -65,6 +66,10 @@ jobs:
 
           cp index.html _site/index.html
           cp xauusd-data.js _site/xauusd-data.js
+
+          if [ -f "board.html" ]; then
+            cp board.html _site/board.html
+          fi
 
           if [ -f "macro-preview.html" ]; then
             cp macro-preview.html _site/macro-preview.html
