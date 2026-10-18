@@ -31,7 +31,26 @@ MIN_OK = 12
 
 
 def finite(x) -> bool:
-    return x is not None and isinstance(x, (int, float)) and math.isfinite(float(x))
+    return x is not None and not isinstance(x, bool) and isinstance(x, (int, float)) and math.isfinite(float(x))
+
+
+
+def failure_class(detail: str) -> str:
+    """Safe provider failure categories; never print arbitrary API error text."""
+    lower = str(detail).lower()
+    if any(word in lower for word in (
+        "plan", "subscription", "upgrade", "permission", "not supported",
+        "not available on", "invalid symbol", "access denied",
+    )):
+        return "PLAN_OR_SYMBOL_RESTRICTED"
+    if any(word in lower for word in ("429", "rate limit", "per minute", "limit reached")):
+        return "RATE_LIMITED"
+    if any(word in lower for word in ("timeout", "timed out", "502", "503", "504", "connection")):
+        return "TRANSIENT_PROVIDER_ERROR"
+    if any(word in lower for word in ("no time-series", "no values", "no daily observations")):
+        return "NO_PROVIDER_BARS"
+    return "UNAVAILABLE_UNCLASSIFIED"
+
 
 
 def verify_snapshot_text(text: str) -> list[str]:
@@ -56,6 +75,9 @@ def verify_snapshot_text(text: str) -> list[str]:
         if entry is None:
             problems.append(f"{symbol}: entry missing entirely")
             continue
+        if not isinstance(entry, dict):
+            problems.append(f"{symbol}: entry must be an object")
+            continue
         if entry.get("ok") is True:
             if not finite(entry.get("last")) or not finite(entry.get("changePct")) or not entry.get("barDate"):
                 problems.append(f"{symbol}: ok=True but last/changePct/barDate incomplete: {entry}")
@@ -69,6 +91,11 @@ def verify_snapshot_text(text: str) -> list[str]:
 
     if ok_count < MIN_OK:
         problems.append(f"only {ok_count}/{len(CANONICAL)} symbols OK, minimum is {MIN_OK}")
+        for symbol in CANONICAL:
+            entry = symbols.get(symbol)
+            if not isinstance(entry, dict) or entry.get("ok") is not True:
+                category = failure_class(entry.get("detail", "") if isinstance(entry, dict) else "")
+                problems.append(f"{symbol}: unavailable ({category})")
     return problems
 
 
