@@ -16,6 +16,7 @@
       <button type="button" data-nav="screener">▤ Screener</button>
       <button type="button" data-nav="charts">▥ Charts</button>
       <button type="button" data-nav="heatmap">▦ Heatmap</button>
+      <button type="button" data-nav="compare">◫ Compare</button>
       <button type="button" data-nav="watchlist">☆ Watchlist</button>
       <button type="button" data-nav="sources">◎ Sources</button>
     </nav>
@@ -148,6 +149,51 @@
         <div class="panel-head"><h2>Sector performance matrix</h2><span class="pill">IMPORTED COVERAGE ONLY</span></div>
         <p class="subtitle">Tiles are grouped by imported sector and ordered by available market capitalization. Missing changes display a neutral tile. This is not a complete US-market map.</p>
         <div id="heatmap-grid" class="heat-grid"><div class="empty">Import stock rows via the screener.</div></div>
+      </section>
+    </section>
+
+    <section data-page="compare" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Compare historical asset performance</h2>
+            <p class="subtitle">Choose up to eight available price histories. Comparison uses only exact shared dates; missing sessions are excluded.</p>
+          </div>
+          <span class="pill">HISTORICAL · READ ONLY</span>
+        </div>
+        <div class="tool-row">
+          <button type="button" id="compare-watchlist">Select available watchlist</button>
+          <button type="button" id="compare-clear">Clear selection</button>
+          <span class="panel-meta">Imported OHLC is unverified. XAU uses HELIX published daily closes.</span>
+        </div>
+        <fieldset class="compare-set">
+          <legend>Price histories to compare (1–8)</legend>
+          <div id="compare-symbol-options" class="compare-options"></div>
+        </fieldset>
+        <div class="filters">
+          <label>From date (optional)<input id="compare-start" type="date"></label>
+          <label>To date (optional)<input id="compare-end" type="date"></label>
+          <button id="compare-run" class="primary" type="button">Run comparison</button>
+        </div>
+        <p id="compare-status" class="source-status" role="status" aria-live="polite">Select histories and run a comparison.</p>
+        <div id="compare-plot" class="chart compare-plot"></div>
+        <div id="compare-legend" class="compare-legend"></div>
+      </section>
+      <div class="data-grid">
+        <section class="panel">
+          <h2>Historical relative performance</h2>
+          <div id="compare-ranking" class="table-scroll"></div>
+          <p class="subtitle">Indexed to 100 on the earliest shared observation. Returns do not include dividends, fees, or corporate actions unless already adjusted by the source.</p>
+        </section>
+        <section class="panel">
+          <h2>Observed return correlations</h2>
+          <div id="compare-correlation" class="table-scroll"></div>
+          <p class="subtitle">Pearson correlation of log returns across shared observations. N/A means too few observations or zero variation. Correlation is not causation or a forecast.</p>
+        </section>
+      </div>
+      <section class="panel">
+        <h2>Monthly return study</h2>
+        <div id="compare-monthly" class="table-scroll"></div>
+        <p class="subtitle">Month-end comparisons require a recorded close in the immediately preceding calendar month; gaps are not backfilled. Partial months may be present in imported files.</p>
       </section>
     </section>
 
