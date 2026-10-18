@@ -184,6 +184,7 @@ function renderScreener(){
   state.filtered=rows;
   paint('security-count',state.stocks.length);paint('match-count',rows.length);paint('watch-count',state.watch.size);
   const body=$('screener-body');body.replaceChildren();
+  renderScreenCharts();
   if(!rows.length){const tr=make('tr'),td=make('td','empty',state.stocks.length?'No matching securities.':'No stock records yet.');td.colSpan=9;tr.append(td);body.append(tr);return;}
   for(const row of rows){
     const tr=make('tr');const watch=make('td'),btn=make('button','watch-button',state.watch.has(row.symbol)?'★':'☆');
@@ -193,6 +194,25 @@ function renderScreener(){
     fields.forEach((value,index)=>{const td=make('td',index===0?'ticker':index===4?tone(row.changePct):'',value);tr.append(td);});
     body.append(tr);
   }
+}
+function renderScreenCharts() {
+  const chartMode=$('screen-view').value==='charts';
+  $('screener-table').hidden=chartMode;
+  $('screen-charts').hidden=!chartMode;
+  $('screen-chart-summary').hidden=!chartMode;
+  if(!chartMode)return;
+  const host=$('screen-charts');host.replaceChildren();
+  const selected=availableScreenCharts(state.filtered,state.ohlcBySymbol,{max:24});
+  const bars=Number($('chart-bars').value)||90,palette=$('chart-palette').value;
+  if(!selected.length){host.append(make('p','empty','No matching securities to chart.'));paint('screen-chart-summary','No rows available.');return;}
+  for(const item of selected){
+    const box=make('article','chart-box'),h=make('h3','',item.symbol),plot=make('div','chart');
+    box.append(h,plot);host.append(box);
+    if(item.state!=='AVAILABLE'){showEmpty(plot,'No matching imported OHLC.');continue;}
+    renderSvg(plot,item.candles,{mode:'candles',title:item.symbol+' imported OHLC',bars,palette});
+  }
+  const present=selected.filter(x=>x.state==='AVAILABLE').length;
+  paint('screen-chart-summary',`${present} of ${selected.length} displayed symbols have valid imported OHLC. Only the first 24 filtered results are shown. Unverified local files; not streaming quotes.`);
 }
 function renderHeatmap(){
   const host=$('heatmap-grid');host.replaceChildren();
@@ -225,21 +245,63 @@ function renderWatchlist(){
     const btn=make('button','btn-mini','Remove');btn.addEventListener('click',()=>toggleWatch(symbol));row.append(btn);host.append(row);
   }
 }
+function renderChartSelectors(){
+  const host=$('ohlc-symbol'),prior=host.value,keys=Object.keys(state.ohlcBySymbol).sort();
+  host.replaceChildren();
+  if(!keys.length){host.add(new Option('No imported OHLC',''));return;}
+  keys.forEach(symbol=>host.add(new Option(symbol,symbol)));
+  host.value=keys.includes(prior)?prior:keys[0];
+}
+function renderTemplateList(){
+  const host=$('chart-template'),prior=host.value;
+  host.replaceChildren();
+  for(const [id,preset] of Object.entries(CHART_PRESETS))host.add(new Option(preset.label,id));
+  for(const name of Object.keys(state.chartTemplates).sort())host.add(new Option('Custom: '+name,name));
+  host.value=[...host.options].some(o=>o.value===prior)?prior:'calm';
+}
+function applyChartTemplate(){
+  try{
+    const template=getTemplate($('chart-template').value,state.chartTemplates);
+    $('chart-mode').value=template.mode;$('chart-bars').value=String(template.bars);
+    $('sma-toggle').checked=template.sma;$('rsi-toggle').checked=template.rsi;
+    $('chart-palette').value=template.palette;
+    renderCharts();renderScreenCharts();
+    paint('chart-feedback','Applied chart template. Data-source provenance remains unchanged.');
+  }catch(error){paint('chart-feedback',`Template rejected: ${error.message}`);}
+}
+function saveChartTemplate(){
+  const name=$('chart-template-name').value.trim();
+  if(!name||name.length>45||Object.hasOwn(CHART_PRESETS,name)){paint('chart-feedback','Enter a distinct custom template name (1–45 characters).');return;}
+  if(!Object.hasOwn(state.chartTemplates,name)&&Object.keys(state.chartTemplates).length>=20){paint('chart-feedback','Maximum 20 custom chart templates.');return;}
+  try{
+    state.chartTemplates[name]=validateChartTemplate({
+      mode:$('chart-mode').value,bars:Number($('chart-bars').value),
+      sma:$('sma-toggle').checked,rsi:$('rsi-toggle').checked,palette:$('chart-palette').value
+    });
+    safeStore();renderTemplateList();$('chart-template').value=name;
+    paint('chart-feedback',`Saved reusable chart template: ${name}`);
+  }catch(error){paint('chart-feedback',`Template rejected: ${error.message}`);}
+}
 function renderCharts(){
   const grid=$('chart-grid'),mode=$('chart-mode').value,panes=Number($('chart-layout').value);
   grid.classList.toggle('multi',panes>1);grid.replaceChildren();
-  const smaOn=$('sma-toggle').checked,rsiOn=$('rsi-toggle').checked;
+  const symbol=$('ohlc-symbol').value;
+  state.candles=state.ohlcBySymbol[symbol]??[];
+  const settings={sma:$('sma-toggle').checked,showRsi:$('rsi-toggle').checked,
+    bars:Number($('chart-bars').value)||90,palette:$('chart-palette').value};
   const entries=mode==='candles'
-    ?[{label:'Imported OHLC (unverified)',series:state.candles,mode:'candles'}, {label:'HELIX XAU daily close (not OHLC)',series:state.history,mode:'line'}]
-    :[{label:'HELIX XAU daily close',series:state.history,mode:'line'}, {label:'Imported OHLC close series',series:state.candles,mode:'line'}];
+    ?[{label:`${symbol||'Imported'} genuine OHLC (unverified)`,series:state.candles,mode:'candles'},
+      {label:'HELIX XAU daily close — not OHLC',series:state.history,mode:'line'}]
+    :[{label:'HELIX XAU daily close',series:state.history,mode:'line'},
+      {label:`${symbol||'Imported'} OHLC close history`,series:state.candles,mode:'line'}];
   for(let index=0;index<panes;index++){
     const entry=entries[index]??{label:`Panel ${index+1}: no additional provider series`,series:[],mode:'line'};
     const box=make('div','chart-box'),head=make('h3','',entry.label),plot=make('div','chart');
     box.append(head,plot);grid.append(box);
-    renderSvg(plot,entry.series,{mode:entry.mode,title:entry.label,sma:smaOn,showRsi:rsiOn});
+    renderSvg(plot,entry.series,{mode:entry.mode,title:entry.label,...settings});
   }
   paint('chart-provenance',mode==='candles'?'IMPORTED OHLC IS UNVERIFIED':'HELIX DAILY CLOSE + UNVERIFIED IMPORTS');
-  paint('chart-feedback',`XAU historical closes: ${state.history.length} • Imported valid OHLC bars: ${state.candles.length}. Only an authorized live feed can enable live charts.`);
+  paint('chart-feedback',`HELIX closes: ${state.history.length} • Selected symbol: ${symbol||'none'} • Imported bars: ${state.candles.length}. No licensed live feed is connected.`);
 }
 function renderSources(){
   const host=$('source-diagnostics');host.replaceChildren();
@@ -269,8 +331,12 @@ async function loadCandles(file){
   if(file.size>2_000_000){paint('chart-feedback','OHLC import rejected: over 2 MB.');return;}
   try{
     const records=parseTabular(await file.text());
-    state.candles=normalizeCandles(records);
-    renderCharts();renderSources();
+    const mapping=normalizeSymbolCandles(records);
+    state.ohlcBySymbol=mapping;
+    renderChartSelectors();
+    const active=$('ohlc-symbol').value;
+    state.candles=mapping[active]??[];
+    renderCharts();renderScreenCharts();renderSources();
   }catch(error){paint('chart-feedback',`OHLC rejected: ${error.message}. Previous series retained.`);}
 }
 function csvDownload(){
