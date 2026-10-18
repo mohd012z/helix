@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-10-17T09:16:56+08:00",
+    "generatedAt": "2026-10-18T08:59:42+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,38 +13,38 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-10-17",
-        "timestamp": "2026-10-17T09:16:56+08:00"
+        "detail": "latest daily bar 2026-10-18",
+        "timestamp": "2026-10-18T08:59:42+08:00"
       },
       "dxy": {
         "ok": false,
         "label": "Twelve Data DXY",
         "detail": "No exact/confirmed DXY symbol found",
-        "timestamp": "2026-10-17T09:16:56+08:00"
+        "timestamp": "2026-10-18T08:59:42+08:00"
       },
       "brent": {
         "ok": false,
         "label": "Twelve Data Brent",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XBR%2FUSD&interval=1day&outputsize=3&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-10-17T09:17:05+08:00"
+        "timestamp": "2026-10-18T08:59:50+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
         "detail": "latest 2026-10-15",
-        "timestamp": "2026-10-17T09:17:05+08:00"
+        "timestamp": "2026-10-18T08:59:50+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
-        "detail": "0 relevant recent items",
-        "timestamp": "2026-10-17T09:17:06+08:00"
+        "detail": "1 relevant recent items",
+        "timestamp": "2026-10-18T08:59:50+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-10-17T09:17:06+08:00"
+        "timestamp": "2026-10-18T08:59:51+08:00"
       }
     },
     "warnings": [
@@ -52,22 +52,22 @@ window.XAUUSD_DATA = {
       "Brent unavailable for this run."
     ]
   },
-  "updated": "2026-10-17 09:16 MYT",
+  "updated": "2026-10-18 08:59 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4164.76,
-    "change": -3.41,
-    "changePct": -0.08,
-    "dayRange": "4,163.48 - 4,169.45",
-    "monthPct": -2.83,
+    "spot": 4164.64,
+    "change": -0.08,
+    "changePct": -0.0,
+    "dayRange": "4,164.58 - 4,164.86",
+    "monthPct": 1.2,
     "yearPct": -4.22,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-10-17; rolling history used: 370 bars",
-    "latestDailyClose": 4164.76,
+    "note": "Latest provider daily bar: 2026-10-18; rolling history used: 370 bars",
+    "latestDailyClose": 4164.64,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5595.46,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-10-17"
+    "providerBarTime": "2026-10-18"
   },
   "macro": [
     {
@@ -95,7 +95,7 @@ window.XAUUSD_DATA = {
   "sentiment": {
     "bias": "UPWARD",
     "goldTone": "BULLISH",
-    "score": 0.604,
+    "score": 0.613,
     "confidence": 69,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
     "netSpeechSignal": "UP",
@@ -137,7 +137,18 @@ window.XAUUSD_DATA = {
       }
     ]
   },
-  "news": [],
+  "news": [
+    {
+      "time": "2026-10-16 19:30 UTC",
+      "title": "Oil-Driven Inflation Could Turn Bullish for Gold | Presented by CME Group",
+      "summary": "Surging oil prices are currently a headwind for precious metals as higher inflation expectations push interest rates, Treasury yields and the US dollar higher. But if high energy costs begin to threaten growth and force central banks toward rate cuts, falling…",
+      "source": "Biztoc.com",
+      "url": "https://biztoc.com/x/e81bab07965c0e15",
+      "impact": "bullish",
+      "signal": "UP",
+      "impactPct": null
+    }
+  ],
   "speakers": [
     {
       "name": "Supervisory Modernization After Silicon Valley Bank",
@@ -232,15 +243,15 @@ window.XAUUSD_DATA = {
   ],
   "levels": {
     "resistance": [
-      4195.39,
-      4222.62,
-      4225.62,
-      4246.62
+      4168.28,
+      4171.85,
+      4174.25,
+      4225.62
     ],
     "support": [
-      4144.16,
-      4120.16,
-      4092.93,
+      4162.32,
+      4159.91,
+      4156.35,
       4066.06
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
@@ -255,8 +266,8 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "Observed XAU momentum",
-      "level": "-0.08%",
-      "w": 5,
+      "level": "-0.00%",
+      "w": 0,
       "dir": "down"
     }
   ],
@@ -266,10 +277,6 @@ window.XAUUSD_DATA = {
     "yMin": 4094.88,
     "yMax": 4206.67,
     "points": [
-      {
-        "x": "2026-10-04",
-        "y": 4137.51
-      },
       {
         "x": "2026-10-05",
         "y": 4139.89
@@ -320,7 +327,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-10-17",
-        "y": 4164.76
+        "y": 4164.72
+      },
+      {
+        "x": "2026-10-18",
+        "y": 4164.64
       }
     ]
   },
@@ -331,7 +342,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-17",
+        "x": "2026-10-18",
         "y": 0
       }
     ]
@@ -343,7 +354,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-10-17",
+        "x": "2026-10-18",
         "y": 0
       }
     ]
