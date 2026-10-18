@@ -31,3 +31,22 @@ test('legacy raw GitHub runtime coupling is flagged', () => {
   assert.equal(result.ok, false);
   assert.ok(result.reasons.includes('legacy_repository_coupling'));
 });
+
+test('SVG namespace is ignored by scanner, but ordinary insecure HTTP is still rejected', async () => {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { scanEndpointFiles } = await import('../tools/endpoint-audit.mjs');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'helix-endpoint-'));
+  try {
+    await fs.writeFile(path.join(root, 'safe.js'), "const SVG = 'http://www.w3.org/2000/svg';\n");
+    assert.deepEqual(await scanEndpointFiles(root), []);
+    await fs.writeFile(path.join(root, 'bad.js'), "const API = 'http://insecure.example/feed';\n");
+    const findings = await scanEndpointFiles(root);
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].file, 'bad.js');
+    assert.ok(findings[0].reasons.includes('https_required'));
+  } finally {
+    await fs.rm(root, { recursive:true, force:true });
+  }
+});
