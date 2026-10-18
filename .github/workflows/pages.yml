@@ -12,6 +12,7 @@ on:
       - 'xauusd-data.js'
       - 'macro-preview.html'
       - 'macro/**'
+      - 'market-lab/**'
       - 'data/**'
       - '.nojekyll'
       - '.github/workflows/pages.yml'
@@ -79,6 +80,10 @@ jobs:
             cp -R macro _site/macro
           fi
 
+          if [ -d "market-lab" ]; then
+            cp -R market-lab _site/market-lab
+          fi
+
           if [ -d "data" ]; then
             cp -R data _site/data
           fi
@@ -95,6 +100,9 @@ jobs:
           test -s _site/index.html
           test -s _site/xauusd-data.js
           test -f _site/macro/ui/runtime-safety.js
+          test -s _site/market-lab/index.html
+          test -s _site/market-lab/core.mjs
+          test -s _site/market-lab/market-lab.mjs
           grep -q 'VEYRA' _site/index.html
 
           echo "Files prepared:"
