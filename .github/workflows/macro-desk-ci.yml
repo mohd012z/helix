@@ -105,6 +105,9 @@ jobs:
           node --check market-lab/chart-templates.mjs
           node --check market-lab/comparison.mjs
           node --check market-lab/compare-view.mjs
+          node --check market-lab/matrix.mjs
+          node --check market-lab/matrix-view.mjs
+          node --check market-lab/map-embed.mjs
           node --check market-lab/market-lab.mjs
 
       - name: Install Python dependencies for collector tests
