@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080e17">
+<title>HELIX | Market Lab</title>
+<link rel="stylesheet" href="./market-lab.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div><div class="brand">HELIX<span> LAB</span></div><div class="sub">Market intelligence workspace</div></div>
+    <nav class="nav" aria-label="Market Lab navigation">
+      <button type="button" class="active" data-nav="overview">◈ Overview</button>
+      <button type="button" data-nav="screener">▤ Screener</button>
+      <button type="button" data-nav="charts">▥ Charts</button>
+      <button type="button" data-nav="heatmap">▦ Heatmap</button>
+      <button type="button" data-nav="watchlist">☆ Watchlist</button>
+      <button type="button" data-nav="sources">◎ Sources</button>
+    </nav>
+    <div class="rail-bottom">Independent research interface.<br>Not affiliated with Finviz or any exchange.<br><a href="../index.html">← Return to HELIX Pulse</a></div>
+  </aside>
+  <main class="main">
+    <header class="head">
+      <div class="head-left"><small>HELIX / MARKET LAB</small><h1 id="page-title">Research overview</h1></div>
+      <div class="head-actions">
+        <span id="feed-state" class="state">VERIFYING SNAPSHOT</span>
+        <button id="theme-toggle" type="button">◐ Theme</button>
+        <a href="../index.html">← Main dashboard</a>
+      </div>
+    </header>
+    <div class="notice" role="status"><strong>Data integrity</strong><span id="feed-detail">Historical daily-close data only; no licensed real-time stock feed is connected.</span></div>
+    <div class="metrics">
+      <article class="panel stat"><span class="label">XAU/USD reference</span><strong id="xau-last">—</strong><small id="xau-kind">Daily close only</small></article>
+      <article class="panel stat"><span class="label">Imported securities</span><strong id="security-count">0</strong><small>Unverified local file</small></article>
+      <article class="panel stat"><span class="label">Screen matches</span><strong id="match-count">0</strong><small>Based on available values</small></article>
+      <article class="panel stat"><span class="label">Watchlist</span><strong id="watch-count">0</strong><small>Locally saved symbols</small></article>
+    </div>
+
+    <section data-page="overview" class="stack">
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head"><h2>Gold historical trend</h2><span class="pill">SOURCE: HELIX VERIFIED DAILY SNAPSHOT</span></div>
+          <div class="chart" id="overview-chart" aria-label="Historical daily close chart"></div>
+          <div class="panel-meta" id="overview-meta">Waiting for a verified daily-close series.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Workspace readiness</h2><span class="pill">READ-ONLY</span></div>
+          <div id="readiness" class="rows"></div>
+          <p class="subtitle">Live stock charts, exchange redistribution rights and server-side alerts require independent data-provider integration and are not included here.</p>
+        </section>
+      </div>
+      <div class="data-grid">
+        <section class="panel"><div class="panel-head"><h2>Research workflow</h2></div>
+          <div class="list"><article><strong>1. Supply authorized stock data</strong><p>Import a CSV/JSON screener export that you have permission to use.</p></article>
+          <article><strong>2. Screen & inspect</strong><p>Apply sector, size, price movement and volume filters; sort deterministically.</p></article>
+          <article><strong>3. Chart & compare context</strong><p>Inspect real daily closes or import genuine OHLC data. Missing fields are never fabricated.</p></article></div>
+        </section>
+        <section class="panel"><div class="panel-head"><h2>Data provenance rules</h2></div>
+          <div class="list"><article><strong>DAILY_CLOSE is not REAL_TIME</strong><p>Scheduled historical prices cannot become live merely by refreshing the browser.</p></article>
+          <article><strong>Imported ≠ verified</strong><p>Local files may contain stale or incorrect data. The UI labels them unverified.</p></article>
+          <article><strong>No trading endpoints</strong><p>This workspace makes no orders and requests no wallet or brokerage credentials.</p></article></div>
+        </section>
+      </div>
+    </section>
+
+    <section data-page="screener" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head"><div><h2>Advanced screener</h2><p class="subtitle">Screen imported data only. Empty fields cannot satisfy numeric filters.</p></div><div class="tool-row">
+          <label class="file-label">Import CSV/JSON <input id="stock-file" type="file" accept=".csv,.json,text/csv,application/json"></label>
+          <button id="sample-stocks" type="button">Load clearly labeled sample</button>
+          <button id="export-stocks" type="button">Export filtered CSV</button>
+        </div></div>
+        <div class="filters">
+          <label class="filter-wide">Ticker or company<input id="stock-search" placeholder="Search" maxlength="90"></label>
+          <label>Sector<select id="sector-filter"><option value="ALL">All sectors</option></select></label>
+          <label>Min market cap ($)<input id="min-cap" type="number" min="0" placeholder="No minimum"></label>
+          <label>Min volume<input id="min-volume" type="number" min="0" placeholder="No minimum"></label>
+          <label>Min change (%)<input id="min-change" type="number" step="any" placeholder="No minimum"></label>
+          <label>Sort by<select id="sort-field"><option value="symbol">Symbol</option><option value="price">Price</option><option value="changePct">Change %</option><option value="marketCap">Market cap</option><option value="volume">Volume</option><option value="pe">P/E</option></select></label>
+          <label>Order<select id="sort-dir"><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
+        </div>
+        <div class="tool-row"><label class="screen-only" for="preset-name">Preset name</label><input id="preset-name" maxlength="45" placeholder="Preset name">
+          <button id="save-preset" type="button">Save filters</button>
+          <label class="screen-only" for="presets">Saved filters</label><select id="presets"><option value="">Choose preset</option></select>
+          <button id="apply-preset" type="button">Apply</button>
+          <button id="reset-filters" type="button">Clear filters</button>
+        </div>
+        <p id="screener-status" class="source-status" role="status" aria-live="polite">No stock dataset loaded.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Watch</th><th>Symbol</th><th>Company</th><th>Sector</th><th>Price</th><th>Change %</th><th>Volume</th><th>Market cap</th><th>P/E</th></tr></thead>
+          <tbody id="screener-body"><tr><td colspan="9" class="empty">Import a permitted market dataset to begin.</td></tr></tbody>
+        </table></div>
+      </section>
+    </section>
+
+    <section data-page="charts" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head"><div><h2>Interactive historical chart analysis</h2><p class="subtitle">Candles render only when genuine OHLC is supplied. XAU reference contains closes only.</p></div>
+          <div class="tool-row">
+            <label class="file-label">Import OHLC CSV/JSON<input id="ohlc-file" type="file" accept=".csv,.json,text/csv,application/json"></label>
+            <label class="screen-only" for="chart-mode">Chart mode</label>
+            <select id="chart-mode"><option value="line">Line</option><option value="candles">Candles (OHLC only)</option></select>
+            <label class="screen-only" for="chart-layout">Panel layout</label>
+            <select id="chart-layout"><option value="1">1 chart</option><option value="2">2 charts</option><option value="4">4 charts</option></select>
+          </div>
+        </div>
+        <div class="tool-row">
+          <label><input type="checkbox" id="sma-toggle" checked> SMA 5 & 20</label>
+          <label><input type="checkbox" id="rsi-toggle"> RSI 14</label>
+          <span id="chart-provenance" class="pill">HISTORICAL DAILY_CLOSE</span>
+        </div>
+        <div id="chart-grid" class="chart-grid"></div>
+        <p id="chart-feedback" class="panel-meta">Historical snapshot loaded when available.</p>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Interpretation safeguards</h2></div>
+        <p class="subtitle">Moving averages and RSI describe past price behavior; they are not price forecasts. OHLC is validated for correct high/low relations and duplicate dates. Imports never replace the gold snapshot's verified-source label.</p>
+      </section>
+    </section>
+
+    <section data-page="heatmap" class="stack" hidden>
+      <section class="panel">
+        <div class="panel-head"><h2>Sector performance matrix</h2><span class="pill">IMPORTED COVERAGE ONLY</span></div>
+        <p class="subtitle">Tiles are grouped by imported sector and ordered by available market capitalization. Missing changes display a neutral tile. This is not a complete US-market map.</p>
+        <div id="heatmap-grid" class="heat-grid"><div class="empty">Import stock rows via the screener.</div></div>
+      </section>
+    </section>
+
+    <section data-page="watchlist" class="stack" hidden>
+      <div class="data-grid">
+        <section class="panel"><div class="panel-head"><h2>Saved symbol watchlist</h2><span class="pill">DEVICE ONLY</span></div>
+          <div class="tool-row"><label class="screen-only" for="watch-symbol">Symbol to watch</label><input id="watch-symbol" placeholder="Ticker" maxlength="20"><button id="add-watch" type="button">+ Add</button></div>
+          <div id="watchlist-items" class="rows"></div><p class="subtitle">Only the symbol list is stored locally. No account sync.</p>
+        </section>
+        <section class="panel"><div class="panel-head"><h2>Local threshold checks</h2><span class="pill">NOT PUSH NOTIFICATIONS</span></div>
+          <p class="subtitle">Run a manual check against imported stock prices. This is an on-page comparison, not a continuously running alert service.</p>
+          <div class="filters"><label>Symbol<input id="alert-symbol" placeholder="Ticker"></label><label>Above price<input id="alert-above" type="number" step="any" min="0" placeholder="Threshold"></label></div>
+          <button id="check-alert" type="button">Check loaded price</button><p id="alert-result" class="source-status" aria-live="polite">No check performed.</p>
+        </section>
+      </div>
+    </section>
+
+    <section data-page="sources" class="stack" hidden>
+      <div class="data-grid"><section class="panel"><h2>Provider and dataset diagnostics</h2><div id="source-diagnostics" class="list"></div></section>
+        <section class="panel"><h2>Capability assessment</h2><div class="list">
+          <article><strong>Available now</strong><p>Verified HELIX historical XAU daily-close series when present; imported-data screening, visual comparisons, charts, filters, CSV export and local watchlists.</p></article>
+          <article><strong>Needs real licensed feeds</strong><p>Real-time quotes, stock universe, premarket/after-hours, intraday bars, full ETF holdings and filings.</p></article>
+          <article><strong>Needs a running backend</strong><p>Persistent alert delivery, account portfolios, server-side history and scheduled scanning.</p></article>
+          <article><strong>Model research only</strong><p>PyTorch anomaly research requires time-respecting evaluation and explicit model uncertainty. No trained AI price forecasts are shipped.</p></article>
+        </div></section></div>
+    </section>
+    <footer class="foot">HELIX Market Lab • independent research UI • No affiliation with Finviz. All imported values are user supplied and unverified. No investment recommendations or automated trading. <a href="https://finviz.com/elite" target="_blank" rel="noopener noreferrer">Feature research reference</a>.</footer>
+  </main>
+</div>
+<script src="../xauusd-data.js"></script>
+<script type="module" src="./market-lab.mjs"></script>
+</body>
+</html>
