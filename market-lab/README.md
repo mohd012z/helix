@@ -178,3 +178,26 @@ For a future optional PyTorch module, keep model output separate from measured p
 - [August 2026 unified asset pages](https://finviz.com/blog/a-better-way-to-explore-futures-indexes-and-crypto-on-finviz/).
 - [July 2026 screener-to-chart collections](https://finviz.com/blog/see-your-screener-results-w-fully-customizable-charts/).
 - [Lightweight Charts v5 documentation](https://tradingview.github.io/lightweight-charts/docs/5.0) and its required NOTICE attribution if bundled later.
+
+## Phase 3: original Matrix and user-authorized Finviz Maps (18 October 2026)
+
+**Source-backed research**
+- Finviz [September 8 Matrix announcement](https://finviz.com/blog/the-finviz-matrix-market-breadth-visualized/) describes industry-by-market-cap grid/cluster views, metric switching and a colorblind palette.
+- Finviz [October 9 Maps Embed announcement](https://finviz.com/blog/you-can-now-embed-finviz-maps-on-your-website-blog-or-app/) documents its official self-service iframe generator (Maps → Embed Map). It allows members to select markets, performance periods, map dimensions and color palettes. It does **not** publish one universal iframe source URL in that article.
+
+**Implemented in HELIX**
+- Added `Matrix` page: each row is a pair of *sector + industry*, columns classify imported market caps as Mega (≥$200B), Large (≥$10B), Mid (≥$2B), Small (≥$300M), Micro, and Unknown. These are HELIX's **own tier conventions**, not an official Finviz dataset or classification.
+- Supports selecting imported change %, price versus 52-week high/low, P/E, and absolute volume. Each cell shows the **median of available observations**, not an imaginary average market return, and reports `observations/total`; missing values remain N/A. Data from other currencies must be normalized to USD **before** market-cap tiering—the module does not perform FX conversion.
+- Search industries, filter sectors, switch to a colorblind-friendly palette, paginate 50 industries at a time, select a cell to inspect source tickers and jump back to the screener.
+- No quote polling, web scraping, trade placement, Finviz source code, charts, icon files or proprietary assets copied.
+- Added optional `Hosted Maps` view, which has **no automatic external request**. Open Finviz Maps in a new tab, use the official `Embed Map` dialog, copy the generated iframe code, paste it into HELIX, and press **Preview authorized map**. The code is parsed but is **never inserted as HTML**. Only HTTPS map-scoped URLs with the precise Finviz hostname are accepted; javascript: URLs, credentials, sensitive query names and lookalike domains are rejected.
+- A third-party iframe uses lazy loading, restrictive sandbox flags, scoped referrer policy and explicit attribution. The embed's working behavior depends on Finviz's current code and browser policy; HELIX does not authenticate its feed, infer live quote status or override Finviz sign-in restrictions. If the generator emits a different URL shape, validation intentionally rejects it until the pattern is reviewed against official documentation.
+
+**Verification**
+- `tests/js/market-lab-matrix.test.mjs`: 8 new tests covering tier thresholds, sector/industry identity, proper medians, missing observations, bounded sizes, strict HTTPS/host/path embed checks and rejected malicious snippets.
+- `tests/js/market-lab-ui-contract.test.mjs`: checks both tabs and HTML IDs used by the Matrix/Maps controller, and prohibits raw HTML injection or remote fetch in the new renderer.
+- `.github/workflows/macro-desk-ci.yml`: syntax-checks `matrix.mjs`, `matrix-view.mjs`, `map-embed.mjs` and runs all JavaScript tests.
+- Latest verified run: **HELIX VEYRA CI passed; Migration Gate passed.** Independent Market Board Provider Verify failed on Twelve Data HTTP 429 quota while regenerating XAU daily snapshot; this remains an external data-quality blocker, not a UI pass. 
+- The new hosted embed has **not** been tested against a real member-generated embed URL. Full production GitHub Pages, physical phone layouts and live third-party iframe rendering are still unverified. Keep PR #33 in Draft.
+
+**Further requirements before feature equivalence:** provider-approved market universe and normalized reporting currency, historical fundamental updates, licensed intraday/extended-hours streaming, chart/heatmap accessibility audit, persisted per-user views with authentication, and opt-in server-side alert delivery. The embedded Finviz map, when authorized and available, is Finviz-hosted content, not a license to redistribute its underlying data.
