@@ -180,5 +180,92 @@ class CollectBoardTest(unittest.TestCase):
         self.assertEqual(board["symbols"]["EUR/AUD"]["last"], 1.23457)
 
 
+
+class ProviderRecoveryTest(unittest.TestCase):
+    """An insufficient 11/16 board can recover real data, never counterfeit it."""
+
+    @staticmethod
+    def incomplete_board(reason="429 rate limit"):
+        names=[
+            "EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD",
+            "EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","EUR/AUD","XAU/USD","XAG/USD",
+            "BTC/USD","ETH/USD",
+        ]
+        symbols={}
+        for i,symbol in enumerate(names):
+            ok=i<11
+            symbols[symbol]={
+                "symbol":symbol, "group":"major", "assetClass":"fx",
+                "ok":ok, "last":1.0 if ok else None,
+                "changePct":0.0 if ok else None,
+                "barDate":"2026-10-17" if ok else None,
+                "detail":"verified" if ok else reason,
+            }
+        return {"symbols":symbols,"priceType":"DAILY_CLOSE"}
+
+    def test_recovers_temporary_11_of_16_after_cooldown(self):
+        from scripts.update_xauusd import recover_transient_board
+        board=self.incomplete_board()
+        sleeps=[]
+        calls=[]
+        def fetch(key,symbol,outputsize):
+            calls.append((symbol,outputsize))
+            return fake_values(symbol,[1.234,1.2],["2026-10-17","2026-10-16"]),symbol
+        result=recover_transient_board("TESTKEY",board,{},fetch=fetch,sleep=sleeps.append)
+        self.assertEqual(result,1)
+        self.assertEqual(sleeps,[65.0])
+        self.assertEqual(len(calls),1)
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),12)
+        value=board["symbols"]["EUR/AUD"]
+        self.assertEqual(value["barDate"],"2026-10-17")
+        self.assertGreater(value["last"],0)
+
+    def test_does_not_retry_permanent_plan_denials_or_fake_data(self):
+        from scripts.update_xauusd import recover_transient_board
+        board=self.incomplete_board("Plan does not include symbol. Upgrade your subscription.")
+        calls=[]
+        result=recover_transient_board("KEY",board,{},fetch=lambda *_: calls.append(1),sleep=lambda *_: calls.append("sleep"))
+        self.assertEqual(result,0)
+        self.assertEqual(calls,[])
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),11)
+
+    def test_second_429_stops_recovery_without_false_success(self):
+        from scripts.update_xauusd import recover_transient_board,RateLimitError
+        board=self.incomplete_board()
+        attempts=[]
+        def fetch(key,symbol,outputsize):
+            attempts.append(symbol)
+            raise RateLimitError("429")
+        self.assertEqual(recover_transient_board("KEY",board,{},fetch=fetch,sleep=lambda _:None),0)
+        self.assertEqual(len(attempts),1)
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),11)
+
+    def test_bogus_provider_close_and_date_are_not_promoted(self):
+        from scripts.update_xauusd import recover_transient_board
+        for values in [
+            fake_values("EUR/AUD",[float("nan"),1.0],["2026-10-17","2026-10-16"]),
+            fake_values("EUR/AUD",[1.0,1.0],["bad-date","2026-10-16"]),
+        ]:
+            board=self.incomplete_board()
+            recover_transient_board("KEY",board,{},fetch=lambda *_:(values,None),sleep=lambda _:None)
+            self.assertFalse(board["symbols"]["EUR/AUD"]["ok"])
+            self.assertIsNone(board["symbols"]["EUR/AUD"]["last"])
+
+    def test_coverage_diagnostic_lists_symbols_and_redacts_params(self):
+        from scripts.update_xauusd import print_board_coverage
+        from io import StringIO
+        from contextlib import redirect_stdout
+        board=self.incomplete_board("provider rejected apikey=SECRET-CANNOT-PRINT")
+        capture=StringIO()
+        with redirect_stdout(capture):
+            print_board_coverage(board)
+        output=capture.getvalue()
+        self.assertIn("11/16 verified; contract minimum 12",output)
+        self.assertIn("EUR/AUD",output)
+        self.assertNotIn("SECRET-CANNOT-PRINT",output)
+        self.assertIn("[REDACTED]",output)
+
+
+
 if __name__ == "__main__":
     unittest.main()
