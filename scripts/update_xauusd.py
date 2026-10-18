@@ -499,7 +499,7 @@ def recover_transient_board(
             if not all(math.isfinite(v) and v > 0 for v in (close, prior)):
                 raise SourceError("Non-finite or non-positive provider daily closes")
             bar_date = str(a.get("datetime", ""))[:10]
-            if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", bar_date):
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", bar_date):
                 raise SourceError("Provider daily close is missing a valid bar date")
             entry.update(
                 ok=True,
@@ -535,7 +535,7 @@ def print_board_coverage(board: dict, *, minimum_ok: int = BOARD_MIN_OK) -> None
         if entry.get("ok") is not True:
             reason = str(entry.get("detail") or "No provider detail")
             # Keep CI stdout safe from extremely long provider echoes.
-            reason = re.sub(r"(?i)(apikey|api_key|token|secret)=([^&\\s]+)", r"\\1=[REDACTED]", reason)
+            reason = re.sub(r"(?i)(apikey|api_key|token|secret)=([^&\s]+)", r"\1=[REDACTED]", reason)
             print(f"BOARD UNAVAILABLE: {symbol}: {reason[:180]}")
 
 
