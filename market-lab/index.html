@@ -70,7 +70,7 @@
 
     <section data-page="screener" class="stack" hidden>
       <section class="panel">
-        <div class="panel-head"><div><h2>Advanced screener</h2><p class="subtitle">Screen imported data only. Empty fields cannot satisfy numeric filters.</p></div><div class="tool-row">
+        <div class="panel-head"><div><h2>Advanced screener</h2><p class="subtitle">Screen imported data only. Empty fields cannot satisfy numeric filters. Prices and market capitalization are assumed to be in USD for display; HELIX performs no FX conversion. Imported currency and corporate-action adjustments are not verified.</p></div><div class="tool-row">
           <label class="file-label">Import CSV/JSON <input id="stock-file" type="file" accept=".csv,.json,text/csv,application/json"></label>
           <button id="sample-stocks" type="button">Load clearly labeled sample</button>
           <button id="export-stocks" type="button">Export filtered CSV</button>
@@ -229,7 +229,7 @@
           <button type="button" id="matrix-next">Next industries →</button>
         </div>
         <div id="matrix-details" class="panel matrix-details" aria-live="polite">Select a Matrix cell to inspect its contributing securities and missing values.</div>
-        <p class="subtitle">Market-cap tiers are user-interface conventions, not a statement of any exchange classification. Cell statistics use the median of available values. The Matrix is not representative of the full market unless your source covers it.</p>
+        <p class="subtitle">Market caps must already be in USD for these tier labels to be meaningful; there is no FX normalization. Tiers are HELIX interface conventions, not exchange classifications. Cells show medians of reported values, not complete-market returns. Industry, sector and price coverage depend entirely on the imported file.</p>
       </section>
     </section>
 
