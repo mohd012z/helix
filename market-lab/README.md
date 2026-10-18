@@ -123,3 +123,58 @@ The records above illustrate the **file format only**, not actual prices. Do not
 **Further gaps relative to Finviz Elite:** the initial workspace still lacks licensed live stock quotes, after-hours trading data, complete equity universe, chart drawing tools, events/filing feeds, and provider-level fundamentals. Static Pages cannot run the server-side jobs needed for persistent alerts. Templates are locally saved only, not synced to an account. No machine-learning model or PyTorch model has been trained or validated, and the UI makes no predictive claims.
 
 New verification gate: `node --test tests/js/market-lab-templates.test.mjs`, included automatically by the existing test-glob workflow. Keep this draft PR unmerged until all relevant CI and browser smoke tests pass.
+
+## Phase 2: historical asset comparison (2026-10-18)
+
+Finviz's [April 9, 2026 Compare release](https://finviz.com/blog/how-to-compare-stocks-and-etfs-in-seconds/) adds synchronized comparison charts, historical returns, monthly heatmaps, fundamental comparisons and relative-performance views. HELIX now implements an independent **historical price** subset in a distinct `Compare` view.
+
+### Implemented
+- Exactly observed, matching calendar days across 1–8 selected price histories. Non-overlapping dates are excluded and counted explicitly.
+- Rebased price index starting at **100** on the earliest commonly observed date, plus original first/last closes, period total return and historical performance ordering.
+- Pearson correlation of **log returns over aligned observed intervals**. A correlation is unavailable when data are sparse (under three return intervals) or constant; no value is invented.
+- Month-end closing-price changes only when the immediately preceding calendar month is present. Missing months remain N/A; a partial last month is possible and should not be treated as complete.
+- Optional inclusive date-range controls and a source-separated `HELIX.XAU/USD` identifier. Imported tickers stay unverified and cannot silently replace HELIX's verified XAU history.
+- Stable DOM construction using `textContent` and SVG nodes; no copied Finviz scripts or external data calls.
+- Numerical overflow checks reject rebased values/return sequences that cannot safely be represented.
+
+### Verification evidence and limitations
+- `node --test tests/js/market-lab-comparison.test.mjs`: 9 local focused tests pass, including sparse dates, overlap, invalid inputs, numeric overflow and undefined correlation.
+- Focused Playwright/Chromium **component** test at 420 × 820 pixels: 2 comparison rows, SVG chart and correlations rendered without browser errors.
+- The full deployed HELIX page, visual responsive layout on physical iOS/Android devices, data provider entitlement, and production deployment **have not been verified** by that component test.
+- Relative performance uses historical closing prices; it does **not** incorporate corporate-action adjustments, dividends, exchange-rate translation or transaction fees unless the source data already encodes them.
+- Correlation of irregularly spaced aligned observations describes those *intervals*, not a standardized daily statistic. With different market calendars, users should inspect the number and spacing of matching dates before interpretation.
+- The result is **not** a live market data feed, stock forecast, recommendation or brokerage function.
+
+### Secure, authorized real-time phase: source architecture
+
+Twelve Data's [WebSocket FAQ](https://support.twelvedata.com/en/articles/5194610-websocket-faq) states that WebSocket streaming primarily supplies price updates, not native OHLC or technical-indicator streams. Twelve Data distinguishes separate API and WebSocket quotas; published [credits documentation](https://support.twelvedata.com/en/articles/5615854-credits) describes HTTP 429 on credit exhaustion. Live stock display and redistribution require permission and appropriate exchange/provider entitlements.
+
+Recommended service boundary:
+
+```text
+Approved licensed market data
+      |
+Private backend collector (server-only key, entitlement check, rate budget)
+      |
+Provider-specific parse, instrument metadata, exchange sessions and sequence audit
+      |
+Canonical envelope {symbol, market, price, eventTime, receivedTime, session, provenance}
+      |
+Time and symbol validation / duplicate rejection / outage detection
+      |
+Authorized client transport (HTTPS snapshots + authenticated WSS subscriptions)
+      |
+HELIX read-only chart layer: LIVE only when the licensed channel is healthy
+```
+
+Stop new subscriptions after HTTP 429 / quota exhaustion and honor published retry guidance; never substitute guessed ticks or label the daily-close snapshot LIVE. Aggregate OHLC only from an authorized, sequence-checked and sufficiently complete tick feed; otherwise expose `GAP/UNAVAILABLE`.
+
+For a future optional PyTorch module, keep model output separate from measured prices, use chronological and embargoed validation splits, include benchmark comparisons and nonstationarity/drift checks, and never advertise synthetic predictions as live quotes. No neural-network model has been trained, deployed or performance-verified in this PR.
+
+### Relevant official feature references
+
+- [Finviz Elite capabilities](https://finviz.com/elite), including multi-layout charts and the expanded stock screener.
+- [April 2026 Compare research](https://finviz.com/blog/how-to-compare-stocks-and-etfs-in-seconds/).
+- [August 2026 unified asset pages](https://finviz.com/blog/a-better-way-to-explore-futures-indexes-and-crypto-on-finviz/).
+- [July 2026 screener-to-chart collections](https://finviz.com/blog/see-your-screener-results-w-fully-customizable-charts/).
+- [Lightweight Charts v5 documentation](https://tradingview.github.io/lightweight-charts/docs/5.0) and its required NOTICE attribution if bundled later.
