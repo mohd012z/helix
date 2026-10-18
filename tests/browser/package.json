@@ -1,0 +1,9 @@
+{
+  "name": "helix-market-lab-browser-smoke",
+  "private": true,
+  "type": "module",
+  "description": "Isolated browser smoke checks for HELIX Market Lab; not shipped to GitHub Pages",
+  "devDependencies": {
+    "playwright": "1.64.0"
+  }
+}
