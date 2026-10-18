@@ -36,9 +36,9 @@ test('no chart library or Finviz script is remotely included',()=>{
 });
 
 test('comparison renderer IDs exist and contain no remote feed or raw HTML injection',()=>{
-  const ids=new Set([...html.matchAll(/\\bid="([^"]+)"/g)].map(m=>m[1]));
-  const refs=new Set([...compare.matchAll(/\\$\\('([^']+)'\\)/g)].map(m=>m[1]));
+  const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+  const refs=new Set([...compare.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]));
   assert.deepEqual([...refs].filter(x=>!ids.has(x)),[]);
-  assert.doesNotMatch(compare,/\\bfetch\\s*\\(/);
-  assert.doesNotMatch(compare,/\\binnerHTML\\s*=/);
+  assert.doesNotMatch(compare,/\bfetch\s*\(/);
+  assert.doesNotMatch(compare,/\binnerHTML\s*=/);
 });
