@@ -8,7 +8,7 @@ const css=await fs.readFile(new URL('../../market-lab/market-lab.css',import.met
 
 test('UI script references only IDs declared in its HTML document',()=>{
   const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
-  const refs=new Set([...ui.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]));
+  const refs=new Set([...ui.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]).filter(ref=>!ref.startsWith('[')));
   const missing=[...refs].filter(ref=>!ids.has(ref));
   assert.deepEqual(missing,[],'Missing DOM element IDs: '+missing.join(', '));
 });
