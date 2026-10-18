@@ -267,5 +267,42 @@ class ProviderRecoveryTest(unittest.TestCase):
 
 
 
+
+class MandatoryGoldCooldownTest(unittest.TestCase):
+    def test_gold_retries_exactly_once_after_rate_limit(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls=[]
+        sleeps=[]
+        def fake_fetch(key,symbol,outputsize):
+            calls.append((symbol,outputsize))
+            if len(calls)==1:
+                raise RateLimitError("429")
+            return fake_values(symbol,[100,101],["2026-10-17","2026-10-16"]),symbol
+        values,_=fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=sleeps.append)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(sleeps,[65.0])
+        self.assertEqual(values[0]["datetime"],"2026-10-17")
+
+    def test_second_gold_429_preserves_hard_failure(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls=[]
+        def fake_fetch(key,symbol,outputsize):
+            calls.append(symbol)
+            raise RateLimitError("429")
+        with self.assertRaises(RateLimitError):
+            fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=lambda _:None)
+        self.assertEqual(calls,["XAU/USD","XAU/USD"])
+
+    def test_gold_plan_denial_has_no_retry(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, SourceError
+        attempts=[]
+        def fake_fetch(*_):
+            attempts.append(1)
+            raise SourceError("subscription not authorized")
+        with self.assertRaises(SourceError):
+            fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=lambda _:self.fail("should not retry"))
+        self.assertEqual(attempts,[1])
+
+
 if __name__ == "__main__":
     unittest.main()
