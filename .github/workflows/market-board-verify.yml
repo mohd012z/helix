@@ -14,6 +14,12 @@ on:
 permissions:
   contents: read
 
+# Both the daily publisher and the PR provider gate share one Twelve Data
+# credit pool. Queue instead of launching simultaneous secret-backed runs.
+concurrency:
+  group: helix-live-twelve-data
+  cancel-in-progress: false
+
 jobs:
   board:
     name: Verify board against live provider
