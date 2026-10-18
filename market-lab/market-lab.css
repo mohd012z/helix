@@ -15,3 +15,20 @@ html.light{color-scheme:light;--bg:#f0f4f9;--panel:#fff;--panel2:#e9f1fa;--borde
 #chart-template-name {color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px;max-width:170px}
 #chart-template,#chart-bars,#chart-palette,#ohlc-symbol,#screen-view {color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;max-width:180px}
 @media(max-width:630px){.screen-grid{grid-template-columns:1fr}.tool-row{align-items:center}#chart-template-name{max-width:150px}}
+
+/* Comparison: exact-date, multi-source historical research (never live quotes). */
+.compare-set{margin:13px 0;padding:12px;border:1px solid var(--border);border-radius:10px}
+.compare-set legend{padding:0 7px;font-size:11px;color:var(--muted);font-weight:700}
+.compare-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px}
+.compare-option{display:flex;align-items:center;gap:8px;background:var(--panel2);padding:9px;border:1px solid var(--border);border-radius:8px;overflow-wrap:anywhere}
+.compare-option input{accent-color:var(--accent)}
+.compare-plot{min-height:300px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.compare-plot svg{width:100%;height:310px}
+.compare-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.compare-legend-item{border-left:4px solid var(--accent);padding:4px 8px;font-weight:700;background:var(--panel2);border-radius:5px}
+#compare-ranking,#compare-correlation,#compare-monthly{max-height:380px}
+#compare-ranking table,#compare-correlation table,#compare-monthly table{min-width:440px}
+#compare-monthly table{min-width:580px}
+#compare-run{align-self:end}
+@media(max-width:630px){.compare-options{grid-template-columns:1fr 1fr}.compare-plot svg{height:240px}}
+@media(max-width:360px){.compare-options{grid-template-columns:1fr}}
