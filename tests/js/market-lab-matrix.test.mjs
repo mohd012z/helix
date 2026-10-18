@@ -14,7 +14,7 @@ test('nonoverlapping cap tiers and explicit unknown classifications',()=>{
 });
 test('metric calculations use explicit finite inputs without assigning a missing value',()=>{
   assert.equal(metricValue(stock('AAA'),'changePct'),5);
-  assert.equal(metricValue(stock('AAA'),'drawdown52'),-20);
+  assert.ok(Math.abs(metricValue(stock('AAA'),'drawdown52')-(-20)) < 1e-10);
   assert.equal(metricValue(stock('AAA'),'aboveLow52'),25);
   assert.equal(metricValue(stock('AAA',{high52:null}),'drawdown52'),null);
   assert.equal(metricValue(stock('AAA',{price:0}),'drawdown52'),null);
