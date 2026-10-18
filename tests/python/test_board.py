@@ -283,7 +283,7 @@ class MandatoryGoldCooldownTest(unittest.TestCase):
         self.assertEqual(sleeps,[65.0])
         self.assertEqual(values[0]["datetime"],"2026-10-17")
 
-    def test_second_gold_429_preserves_hard_failure(self):
+    def test_third_gold_429_preserves_hard_failure(self):
         from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
         calls=[]
         def fake_fetch(key,symbol,outputsize):
@@ -291,7 +291,29 @@ class MandatoryGoldCooldownTest(unittest.TestCase):
             raise RateLimitError("429")
         with self.assertRaises(RateLimitError):
             fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=lambda _:None)
-        self.assertEqual(calls,["XAU/USD","XAU/USD"])
+        self.assertEqual(calls,["XAU/USD","XAU/USD","XAU/USD"])
+
+    def test_recovery_after_two_429_waits_65_and_125(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        attempts, sleeps = [], []
+        def fake_fetch(key, symbol, outputsize):
+            attempts.append((symbol, outputsize))
+            if len(attempts) < 3:
+                raise RateLimitError("429")
+            return fake_values(symbol,[100.0,99.0],["2026-10-17","2026-10-16"]), symbol
+        values, _ = fetch_mandatory_xau(
+            "KEY", fetch=fake_fetch, sleep=sleeps.append, outputsize=60
+        )
+        self.assertEqual(len(attempts), 3)
+        self.assertEqual(attempts, [("XAU/USD", 60)] * 3)
+        self.assertEqual(sleeps, [65.0, 125.0])
+        self.assertEqual(values[0]["datetime"], "2026-10-17")
+
+    def test_bad_outputsize_cannot_disable_rate_limit_budget(self):
+        from scripts.update_xauusd import fetch_mandatory_xau
+        for bad in [0, 1, 371, True, "60"]:
+            with self.assertRaises(ValueError):
+                fetch_mandatory_xau("KEY", fetch=lambda *_: self.fail("unexpected provider request"), outputsize=bad)
 
     def test_gold_plan_denial_has_no_retry(self):
         from scripts.update_xauusd import fetch_mandatory_xau, SourceError

@@ -433,19 +433,36 @@ TRANSIENT_BOARD_ERRORS = (
 
 
 def fetch_mandatory_xau(
-    api_key: str, *, fetch=None, sleep=None, cooldown_seconds: float = 65.0
+    api_key: str, *, fetch=None, sleep=None, outputsize: int = 370,
+    cooldowns: tuple[float, ...] = (65.0, 125.0),
 ) -> tuple[list[dict], str | None]:
-    """One spaced retry for a *transient* 429, never a fabricated fallback."""
+    """Use genuine provider bars with at most three spaced 429 attempts.
+
+    Twelve Data 429 can mean either a minute quota or a daily plan quota.
+    Cooldowns can help only with the former; after the last retry fail closed.
+    """
     if fetch is None:
         fetch = td_time_series
     if sleep is None:
         sleep = time.sleep
-    try:
-        return fetch(api_key, "XAU/USD", 370)
-    except RateLimitError:
-        print("XAU DAILY CLOSE: 429 received; waiting 65s for rolling credit window before one retry.", file=sys.stderr)
-        sleep(cooldown_seconds)
-        return fetch(api_key, "XAU/USD", 370)
+    if not isinstance(outputsize, int) or isinstance(outputsize, bool) or not 2 <= outputsize <= 370:
+        raise ValueError("XAU history outputsize must be 2–370")
+    if len(cooldowns) > 2 or any(not isinstance(d, (int, float)) or not 60 <= d <= 180 for d in cooldowns):
+        raise ValueError("Only two bounded cooldowns of 60–180 seconds are supported")
+    for attempt in range(len(cooldowns) + 1):
+        try:
+            return fetch(api_key, "XAU/USD", outputsize)
+        except RateLimitError:
+            if attempt == len(cooldowns):
+                raise
+            delay = cooldowns[attempt]
+            print(
+                f"XAU DAILY CLOSE: provider 429; waiting {delay:.0f}s "
+                f"before attempt {attempt + 2}/{len(cooldowns) + 1}.",
+                file=sys.stderr,
+            )
+            sleep(delay)
+    raise AssertionError("unreachable")
 
 
 def is_transient_board_error(detail: str) -> bool:
@@ -559,6 +576,11 @@ def print_board_coverage(board: dict, *, minimum_ok: int = BOARD_MIN_OK) -> None
 
 def main() -> int:
     td_key = os.getenv("TWELVE_DATA_API_KEY", "").strip()
+    # PR-only contract verification needs recent reference bars, not the
+    # 370-observation production history. This reduces response size, but does
+    # NOT change the provider's per-request credit weight.
+    board_verify_mode = os.getenv("BOARD_VERIFY_MODE", "").strip() == "1"
+    xau_history_bars = 60 if board_verify_mode else 370
     fred_key = os.getenv("FRED_API_KEY", "").strip()
     news_key = os.getenv("NEWS_API_KEY", "").strip()
     if not td_key:
@@ -566,6 +588,8 @@ def main() -> int:
         return 2
 
     generated = now_local()
+    if board_verify_mode:
+        print("BOARD_VERIFY_MODE: provider board contract check with 60 XAU history bars; not for publication.")
     status: dict[str, dict] = {}
     warnings: list[str] = []
     # Monotonic reference for the board's credit-window settle: pre-board
@@ -575,7 +599,7 @@ def main() -> int:
 
     # --- XAU/USD: mandatory ---
     try:
-        xau, _xau_name = fetch_mandatory_xau(td_key)
+        xau, _xau_name = fetch_mandatory_xau(td_key, outputsize=xau_history_bars)
         latest, prev = latest_pair(xau)
         spot, prev_close = f(latest["close"]), f(prev["close"])
         change = spot - prev_close
@@ -596,6 +620,8 @@ def main() -> int:
     dxy_pct = None
     dxy_series = None
     try:
+        if board_verify_mode:
+            raise SourceError("Skipped optional DXY discovery in board verification mode")
         sym = td_resolve_symbol(td_key, "DXY", ("US Dollar Index", "U.S. Dollar Index"))
         if not sym:
             raise SourceError("No exact/confirmed DXY symbol found")
@@ -613,6 +639,8 @@ def main() -> int:
     # --- Brent: best effort with catalog discovery ---
     brent_item = {"label": "Brent", "value": "—", "delta": "unavailable", "tone": "", "note": "Provider symbol not confirmed"}
     try:
+        if board_verify_mode:
+            raise SourceError("Skipped optional Brent discovery in board verification mode")
         bsym = td_resolve_commodity(td_key, "Brent")
         if not bsym:
             raise SourceError("Brent symbol not found in Twelve Data commodity catalog")
