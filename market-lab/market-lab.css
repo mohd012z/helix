@@ -4,3 +4,14 @@ html.light{color-scheme:light;--bg:#f0f4f9;--panel:#fff;--panel2:#e9f1fa;--borde
 @media(max-width:1120px){.shell{grid-template-columns:84px minmax(0,1fr)}.rail{padding:17px 7px}.brand{font-size:12px;letter-spacing:0}.rail .sub,.rail-bottom{display:none}.nav button{padding:10px 5px;font-size:10px}}
 @media(max-width:830px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.chart-grid.multi{grid-template-columns:1fr 1fr}}
 @media(max-width:630px){.shell{display:block}.rail{height:auto;position:static;display:block;padding:9px 12px}.brand{font-size:15px}.nav{display:flex;overflow:auto;padding-top:8px;gap:5px;scrollbar-width:thin}.nav button{white-space:nowrap;min-width:max-content;padding:9px}.main{padding:15px 10px 25px}.head h1{font-size:21px}.head-actions{width:100%}.stat strong{font-size:18px}.chart-grid.multi{grid-template-columns:1fr}.data-grid{grid-template-columns:1fr}.panel{padding:12px}.notice{align-items:flex-start}.filters{gap:7px}.filters label{flex:1 1 125px}.filters input,.filters select{width:100%;max-width:100%}.chart svg{height:260px}}
+
+/* Research chart-template and screener-card extensions. */
+.screen-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:14px}
+.screen-grid .chart-box {border:1px solid var(--border);border-radius:11px;background:var(--panel2);padding:12px;min-width:0}
+.screen-grid .chart {min-height:165px}
+.screen-grid .chart svg {height:180px}
+.screen-grid .chart .no-data {height:145px}
+#screen-chart-summary {margin-top:10px}
+#chart-template-name {color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px;max-width:170px}
+#chart-template,#chart-bars,#chart-palette,#ohlc-symbol,#screen-view {color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;max-width:180px}
+@media(max-width:630px){.screen-grid{grid-template-columns:1fr}.tool-row{align-items:center}#chart-template-name{max-width:150px}}
