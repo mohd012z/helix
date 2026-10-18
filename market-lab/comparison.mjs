@@ -34,7 +34,11 @@ function normalizePriceSeries(records) {
     return { date, close };
   }).sort((a, b) => a.date.localeCompare(b.date));
 }
-function pct(from, to) { return ROUND((to / from - 1) * 100); }
+function pct(from, to) {
+  const ratio = to / from, change = (ratio - 1) * 100;
+  if (!Number.isFinite(ratio) || ratio <= 0 || !Number.isFinite(change)) throw new RangeError('Price ratio exceeds safe numeric range');
+  return ROUND(change);
+}
 function previousMonth(key) {
   const year = Number(key.slice(0, 4)), month = Number(key.slice(5));
   return month === 1 ? String(year - 1).padStart(4, '0') + '-12' : String(year).padStart(4, '0') + '-' + String(month - 1).padStart(2, '0');
@@ -61,6 +65,7 @@ export function monthlyReturns(series) {
 /** Pearson correlation of log price relatives, using only dates common to all selected series. */
 export function correlation(left, right) {
   if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) throw new TypeError('Unequal return sequences');
+  if (left.some(v => !Number.isFinite(v)) || right.some(v => !Number.isFinite(v))) throw new TypeError('Non-finite return sequence');
   if (left.length < 3) return null;
   const n = left.length, meanA = left.reduce((a, b) => a + b, 0) / n, meanB = right.reduce((a, b) => a + b, 0) / n;
   let cov = 0, varA = 0, varB = 0;
@@ -106,8 +111,16 @@ export function compareHistorical(bySymbol, selected, { start = null, end = null
   const rows = symbols.map(symbol => {
     const prices = commonDates.map(date => maps.get(symbol).get(date));
     const base = prices[0];
-    const indexed = commonDates.map((date, i) => ({ date, index: ROUND(prices[i] / base * 100), close: prices[i] }));
-    const returns = prices.slice(1).map((p, i) => Math.log(p / prices[i]));
+    const indexed = commonDates.map((date, i) => {
+      const rebased = (prices[i] / base) * 100;
+      if (!Number.isFinite(rebased) || rebased <= 0) throw new RangeError('Unsafe rebased price');
+      return { date, index: ROUND(rebased), close: prices[i] };
+    });
+    const returns = prices.slice(1).map((p, i) => {
+      const ratio = p / prices[i];
+      if (!Number.isFinite(ratio) || ratio <= 0) throw new RangeError('Unsafe return interval');
+      return Math.log(ratio);
+    });
     return {
       symbol, indexed, logReturns: returns,
       first: { date: commonDates[0], price: prices[0] },
