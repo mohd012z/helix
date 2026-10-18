@@ -49,6 +49,8 @@ def failure_class(detail: str) -> str:
         return "TRANSIENT_PROVIDER_ERROR"
     if any(word in lower for word in ("no time-series", "no values", "no daily observations")):
         return "NO_PROVIDER_BARS"
+    if "daily" in lower and ("limit" in lower or "quota" in lower):
+        return "DAILY_PROVIDER_QUOTA"
     return "UNAVAILABLE_UNCLASSIFIED"
 
 

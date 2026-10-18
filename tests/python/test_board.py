@@ -61,6 +61,49 @@ class RateLimitTest(unittest.TestCase):
         finally:
             up.requests.get = orig
 
+    def test_429_daily_quota_classification_does_not_leak_response(self):
+        import scripts.update_xauusd as up
+        calls = []
+
+        class FakeResp:
+            status_code = 429
+            def json(self):
+                return {"status": "error",
+                        "message": "You have exceeded your daily API quota. apikey=SHOULD_NOT_APPEAR"}
+
+        original = up.requests.get
+        try:
+            up.requests.get = lambda *_args, **_kw: (calls.append(1) or FakeResp())
+            with self.assertRaises(up.RateLimitError) as caught:
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(caught.exception.scope, "DAILY")
+            self.assertEqual(len(calls), 1)
+            self.assertNotIn("SHOULD_NOT_APPEAR", str(caught.exception))
+        finally:
+            up.requests.get = original
+
+    def test_200_minute_quota_classification(self):
+        import scripts.update_xauusd as up
+        calls = []
+
+        class FakeResp:
+            status_code = 200
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {"status": "error",
+                        "message": "The maximum number of calls per minute has been reached"}
+
+        original = up.requests.get
+        try:
+            up.requests.get = lambda *_args, **_kw: (calls.append(1) or FakeResp())
+            with self.assertRaises(up.RateLimitError) as caught:
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(caught.exception.scope, "MINUTE")
+            self.assertEqual(len(calls), 1)
+        finally:
+            up.requests.get = original
+
     def test_rate_limit_is_a_source_error(self):
         import scripts.update_xauusd as up
         self.assertTrue(issubclass(up.RateLimitError, up.SourceError))
@@ -314,6 +357,20 @@ class MandatoryGoldCooldownTest(unittest.TestCase):
         for bad in [0, 1, 371, True, "60"]:
             with self.assertRaises(ValueError):
                 fetch_mandatory_xau("KEY", fetch=lambda *_: self.fail("unexpected provider request"), outputsize=bad)
+
+    def test_daily_quota_refuses_all_retries(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls = []
+        def exhausted(*_args):
+            calls.append(1)
+            raise RateLimitError("429 daily provider rate limit", scope="DAILY")
+        with self.assertRaises(RateLimitError) as captured:
+            fetch_mandatory_xau(
+                "KEY", fetch=exhausted,
+                sleep=lambda *_: self.fail("daily quota must never sleep/retry")
+            )
+        self.assertEqual(captured.exception.scope, "DAILY")
+        self.assertEqual(len(calls), 1)
 
     def test_gold_plan_denial_has_no_retry(self):
         from scripts.update_xauusd import fetch_mandatory_xau, SourceError

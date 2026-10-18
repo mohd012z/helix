@@ -40,8 +40,39 @@ class SourceError(RuntimeError):
 
 
 class RateLimitError(SourceError):
-    """Provider credit/minute limit hit. Immediate retries cannot help;
-    callers fail fast and label the symbol UNAVAILABLE."""
+    """Provider quota exhaustion: MINUTE, DAILY, or UNKNOWN.
+
+    The provider error body is used only to classify the quota dimension.
+    Avoid storing response text or credentials in public exception details.
+    """
+
+    def __init__(self, message: str, *, scope: str = "UNKNOWN"):
+        super().__init__(message)
+        self.scope = scope
+
+
+def rate_limit_scope(message: str) -> str:
+    """Classify documented Twelve Data quota messages conservatively."""
+    text = str(message).lower()
+    if any(token in text for token in (
+        "daily", "per day", "each day", "per 24 hours", "24-hour",
+        "24 hour", "800 credits", "day quota", "day limit",
+    )):
+        return "DAILY"
+    if any(token in text for token in (
+        "per minute", "each minute", "minutely", "minute limit",
+        "minute quota", "calls per min",
+    )):
+        return "MINUTE"
+    return "UNKNOWN"
+
+
+def provider_limit_error(message: str, *, attempt: int, retries: int) -> RateLimitError:
+    scope = rate_limit_scope(message)
+    return RateLimitError(
+        f"429 {scope.lower()} provider rate limit (attempt {attempt}/{retries})",
+        scope=scope,
+    )
 
 
 def now_local() -> datetime:
@@ -57,7 +88,19 @@ def get_json(url: str, *, params=None, headers=None, retries: int = 3) -> dict:
         try:
             r = requests.get(url, params=params, headers=h, timeout=TIMEOUT)
             if r.status_code == 429:
-                raise RateLimitError(f"429 rate limit (attempt {attempt + 1}/{retries})")
+                # A 429 may be minute-limited OR a Basic-plan daily quota.
+                # Do not echo the raw response: it may include credentials.
+                try:
+                    detail = r.json()
+                except (ValueError, TypeError):
+                    detail = {}
+                explanation = (
+                    str(detail.get("message") or detail.get("code") or "")
+                    if isinstance(detail, dict) else ""
+                )
+                raise provider_limit_error(
+                    explanation, attempt=attempt + 1, retries=retries
+                )
             r.raise_for_status()
             data = r.json()
             if isinstance(data, dict) and data.get("status") == "error":
@@ -66,8 +109,14 @@ def get_json(url: str, *, params=None, headers=None, retries: int = 3) -> dict:
                 # status 200 (Twelve Data: "The maximum number of calls per
                 # minute has been reached"). Detect by message, fail fast, no retry.
                 low = msg.lower()
-                if "rate limit" in low or "limit reached" in low or "per minute" in low or "maximum number of calls" in low:
-                    raise RateLimitError(msg)
+                if any(term in low for term in (
+                    "rate limit", "limit reached", "per minute",
+                    "maximum number of calls", "daily quota",
+                    "daily limit", "api credits", "too many requests",
+                )):
+                    raise provider_limit_error(
+                        msg, attempt=attempt + 1, retries=retries
+                    )
                 raise SourceError(msg)
             return data
         except RateLimitError:
@@ -452,7 +501,14 @@ def fetch_mandatory_xau(
     for attempt in range(len(cooldowns) + 1):
         try:
             return fetch(api_key, "XAU/USD", outputsize)
-        except RateLimitError:
+        except RateLimitError as exc:
+            if exc.scope == "DAILY":
+                print(
+                    "XAU DAILY CLOSE: Twelve Data reported daily quota exhaustion; "
+                    "Basic-plan daily quota resets at 00:00 UTC. No timed retry.",
+                    file=sys.stderr,
+                )
+                raise
             if attempt == len(cooldowns):
                 raise
             delay = cooldowns[attempt]
@@ -471,7 +527,7 @@ def is_transient_board_error(detail: str) -> bool:
     if any(word in reason for word in (
         "plan", "subscription", "not supported", "not available on",
         "invalid symbol", "access denied", "permission", "upgrade",
-        "daily quota", "daily limit", "monthly limit",
+        "daily quota", "daily limit", "monthly limit", "429 daily",
     )):
         return False
     return any(word in reason for word in TRANSIENT_BOARD_ERRORS)
@@ -611,6 +667,16 @@ def main() -> int:
         year_obs = [v for v in reversed(xau) if str(v.get("datetime", "")).startswith(str(year))]
         year_base = f(year_obs[0]["close"]) if year_obs else f(xau[-1]["close"])
         status["xau"] = source_entry(True, "Twelve Data XAU/USD", f"latest daily bar {latest['datetime']}")
+    except RateLimitError as exc:
+        if exc.scope == "DAILY":
+            print(
+                "ERROR: XAU/USD blocked by provider daily quota. "
+                "Retry after 00:00 UTC only if sufficient quota is available.",
+                file=sys.stderr,
+            )
+            return 4
+        print(f"ERROR: XAU/USD fetch failed after bounded retries: {exc}", file=sys.stderr)
+        return 3
     except Exception as exc:
         print(f"ERROR: XAU/USD fetch failed: {exc}", file=sys.stderr)
         return 3
