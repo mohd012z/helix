@@ -11,6 +11,7 @@ const snapshot=window.XAUUSD_DATA??null;
 const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set(),presets:{},chartTemplates:{},ohlcBySymbol:{},sample:false,snapshotQuality:assessSnapshot(snapshot?.meta)};
 const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',watchlist:'Saved watchlist',sources:'Data sources'};
 const STORE_KEY='helix-market-lab-v1';
+const RESERVED_NAMES=new Set(['__proto__','constructor','prototype']);
 const SAMPLE=[
   {symbol:'EXM1',name:'Example Software (Fictional)',sector:'Technology',industry:'Sample',price:50,changePct:2.1,volume:100000,marketCap:5e9,pe:18},
   {symbol:'EXM2',name:'Example Energy (Fictional)',sector:'Energy',industry:'Sample',price:35,changePct:-1.8,volume:250000,marketCap:3e9,pe:9},
@@ -29,12 +30,12 @@ function restore() {
     const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
     if(Array.isArray(saved.watch)) state.watch=new Set(saved.watch.filter(s=>typeof s==='string'&&/^[A-Z0-9.^/_-]{1,20}$/.test(s)).slice(0,300));
     if(saved.presets&&typeof saved.presets==='object'&&!Array.isArray(saved.presets)){
-      state.presets=Object.fromEntries(Object.entries(saved.presets).filter(([k,v])=>typeof k==='string'&&k.length<46&&v&&typeof v==='object').slice(0,30));
+      state.presets=Object.fromEntries(Object.entries(saved.presets).filter(([k,v])=>typeof k==='string'&&k.length<46&&!RESERVED_NAMES.has(k)&&v&&typeof v==='object').slice(0,30));
     }
     if(saved.chartTemplates&&typeof saved.chartTemplates==='object'&&!Array.isArray(saved.chartTemplates)){
       const safe={};
       for(const [key,value] of Object.entries(saved.chartTemplates).slice(0,20)){
-        if(typeof key!=='string'||key.length>45||Object.hasOwn(CHART_PRESETS,key))continue;
+        if(typeof key!=='string'||key.length>45||Object.hasOwn(CHART_PRESETS,key)||RESERVED_NAMES.has(key))continue;
         try{safe[key]=validateChartTemplate(value);}catch{}
       }
       state.chartTemplates=safe;
@@ -271,7 +272,7 @@ function applyChartTemplate(){
 }
 function saveChartTemplate(){
   const name=$('chart-template-name').value.trim();
-  if(!name||name.length>45||Object.hasOwn(CHART_PRESETS,name)){paint('chart-feedback','Enter a distinct custom template name (1–45 characters).');return;}
+  if(!name||name.length>45||Object.hasOwn(CHART_PRESETS,name)||RESERVED_NAMES.has(name)){paint('chart-feedback','Enter a distinct custom template name (1–45 characters).');return;}
   if(!Object.hasOwn(state.chartTemplates,name)&&Object.keys(state.chartTemplates).length>=20){paint('chart-feedback','Maximum 20 custom chart templates.');return;}
   try{
     state.chartTemplates[name]=validateChartTemplate({
@@ -394,7 +395,7 @@ $('export-stocks').addEventListener('click',csvDownload);
 $('reset-filters').addEventListener('click',()=>fillPreset({}));
 $('save-preset').addEventListener('click',()=>{
   const name=$('preset-name').value.trim();
-  if(!name||name.length>45){paint('screener-status','Enter a preset name (1–45 characters).');return;}
+  if(!name||name.length>45||RESERVED_NAMES.has(name)){paint('screener-status','Enter a preset name (1–45 characters).');return;}
   if(!Object.hasOwn(state.presets,name)&&Object.keys(state.presets).length>=30){paint('screener-status','Maximum 30 saved presets.');return;}
   state.presets[name]=fieldsToPreset();safeStore();renderPresetList();$('presets').value=name;
   paint('screener-status',`Saved local filter preset: ${name}`);
