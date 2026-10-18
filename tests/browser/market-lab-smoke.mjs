@@ -93,7 +93,7 @@ async function oneScenario(test,origin) {
     await page.locator('#ohlc-file').setInputFiles({
       name:'synthetic-bars.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(ohlc)),
     });
-    await page.locator('#ohlc-symbol option[value="AAA"]').waitFor();
+    await page.locator('#ohlc-symbol option[value="AAA"]').waitFor({state:'attached'});
     await click(page,'[data-nav="compare"]');
     await click(page,'#compare-clear');
     await page.locator('.compare-option input[value="AAA"]').check();
