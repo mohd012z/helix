@@ -105,9 +105,14 @@ export function initComparison(options) {
     const ranked=result.rows.slice().sort((a,b)=>b.totalReturnPct-a.totalReturnPct || a.symbol.localeCompare(b.symbol));
     table($('compare-ranking'),['Symbol','First','Last','Return','Common bars'],ranked.map(row=>[row.symbol,nf(row.first.price),nf(row.last.price),pct(row.totalReturnPct),String(result.commonDates.length)]));
     table($('compare-correlation'),['Symbol',...symbols],symbols.map((s,i)=>[s,...result.correlations[i].map(v=>v===null?'N/A':nf(v))]));
-    const monthsBySymbol=new Map(result.rows.map(row=>[row.symbol,new Map(monthlyReturns(row.indexed.map(p=>({date:p.date,close:p.close}))).map(m=>[m.month,m.returnPct]))]));
-    const months=[...new Set([...monthsBySymbol.values()].flatMap(map=>[...map.keys()]))].sort().slice(-18);
-    table($('compare-monthly'),['Month',...symbols],months.map(month=>[month,...symbols.map(symbol=>monthsBySymbol.get(symbol).has(month)?pct(monthsBySymbol.get(symbol).get(month)):'N/A')]));
+    try {
+      const monthsBySymbol=new Map(result.rows.map(row=>[row.symbol,new Map(monthlyReturns(row.indexed.map(p=>({date:p.date,close:p.close}))).map(m=>[m.month,m.returnPct]))]));
+      const months=[...new Set([...monthsBySymbol.values()].flatMap(map=>[...map.keys()]))].sort().slice(-18);
+      if(!months.length)$('compare-monthly').append(node('p','No consecutive recorded monthly closes across the selected dates.','empty'));
+      else table($('compare-monthly'),['Month',...symbols],months.map(month=>[month,...symbols.map(symbol=>monthsBySymbol.get(symbol).has(month)?pct(monthsBySymbol.get(symbol).get(month)):'N/A')]));
+    } catch(error) {
+      $('compare-monthly').append(node('p',`Monthly view unavailable: ${error.message}`,'empty'));
+    }
     const discarded=Object.values(result.diagnostics).reduce((sum,d)=>sum+d.discardedNonOverlapping,0);
     show('compare-status',`${result.commonDates.length} exact shared dates · ${discarded} nonoverlapping records excluded across series · ${result.commonDates.length-1} return intervals · ${options.getProvenance()} Historical only; no gap filling, forecast, or live quotes.`);
   }
