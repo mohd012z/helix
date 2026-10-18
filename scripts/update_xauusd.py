@@ -363,23 +363,32 @@ def collect_board(
     sleep=None,
     board_symbols: list[tuple[str, str, str]] = BOARD_SYMBOLS,
     pace_seconds: float = 10.0,
+    window_seconds: float = 60.0,
+    elapsed_since_preboard: float = 0.0,
 ) -> dict:
     """Collect the desk board (FX majors/minors, metals, digital).
 
     ``fetch(api_key, symbol, outputsize) -> (values, name|None)`` is injectable
     for tests; ``sleep`` defaults to time.sleep resolved at call time.
     ``pace_seconds`` fits the free-tier credit limit (8 credits/min): 15
-    symbols at 10s spacing = 6/min, under the limit even with pre-board
-    XAU/DXY/Brent credits sharing the first minute. A 429 fails fast
-    (RateLimitError from get_json, no retry) and that symbol is labelled
-    UNAVAILABLE; it self-heals on the next run. Never block a load on long
-    retries. Matches BACKFILL_PACE_MS=10000 used for the 8-credit/min
-    backfill.
+    symbols at 10s spacing = 6/min. The free limit is a ROLLING 60s window
+    and the pre-board XAU/DXY/Brent calls land in the board's first window —
+    so before the first symbol we settle ``max(0, window - elapsed_since_
+    preboard)`` (the remaining time for pre-board credits to exit the
+    window). This is prevention, not a retry: after the settle the steady
+    6/min pace is self-sustaining. A 429 still fails fast (RateLimitError,
+    no retry) and labels the symbol UNAVAILABLE; it self-heals next run.
+    Matches BACKFILL_PACE_MS=10000 house value.
     """
     if fetch is None:
         fetch = td_time_series
     if sleep is None:
         sleep = time.sleep
+    # Settle the rolling credit window so pre-board credits have fully
+    # exited before the board's first call (see docstring).
+    settle = max(0.0, window_seconds - max(0.0, elapsed_since_preboard))
+    if settle > 0:
+        sleep(settle)
     entries: dict[str, dict] = {}
     for symbol, asset_class, group in board_symbols:
         entry: dict[str, Any] = {
@@ -422,6 +431,10 @@ def main() -> int:
     generated = now_local()
     status: dict[str, dict] = {}
     warnings: list[str] = []
+    # Monotonic reference for the board's credit-window settle: pre-board
+    # XAU/DXY/Brent credits enter the rolling 60s limit window, and the
+    # board must not start until enough of that window has elapsed.
+    t0 = time.monotonic()
 
     # --- XAU/USD: mandatory ---
     try:
@@ -477,7 +490,7 @@ def main() -> int:
         warnings.append("Brent unavailable for this run.")
 
     # --- Market board: FX majors, minors/crosses, metals, digital assets ---
-    board = collect_board(td_key, status)
+    board = collect_board(td_key, status, elapsed_since_preboard=time.monotonic() - t0)
     # XAU/USD is the desk's authority instrument: surface its verified daily
     # close on the metals board too (same bar, same rounding as the hero).
     board["symbols"]["XAU/USD"] = {
