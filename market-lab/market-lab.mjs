@@ -4,13 +4,14 @@ import {
 } from './core.mjs';
 import { CHART_PRESETS, getTemplate, validateChartTemplate, normalizeSymbolCandles, availableScreenCharts } from './chart-templates.mjs';
 import { initComparison } from './compare-view.mjs';
+import { initMatrix, initHostedMaps } from './matrix-view.mjs';
 
 const $=id=>document.getElementById(id);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const paint=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
 const snapshot=window.XAUUSD_DATA??null;
 const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set(),presets:{},chartTemplates:{},ohlcBySymbol:{},sample:false,snapshotQuality:assessSnapshot(snapshot?.meta)};
-const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',watchlist:'Saved watchlist',compare:'Historical comparison',sources:'Data sources'};
+const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',matrix:'Industry Matrix',maps:'Finviz-hosted Maps',watchlist:'Saved watchlist',compare:'Historical comparison',sources:'Data sources'};
 const STORE_KEY='helix-market-lab-v1';
 const RESERVED_NAMES=new Set(['__proto__','constructor','prototype']);
 const SAMPLE=[
@@ -51,6 +52,7 @@ function nav(name){
   paint('page-title',NAV_TITLES[name]);
   if(name==='charts')renderCharts();
   if(name==='heatmap')renderHeatmap();
+  if(name==='matrix')matrixController.refresh();
   if(name==='watchlist')renderWatchlist();
   if(name==='compare')comparisonController.refresh();
   if(name==='sources')renderSources();
@@ -326,7 +328,7 @@ async function loadStocks(file) {
     const entries=parseTabular(await file.text());
     const {rows,errors}=normalizeStocks(entries);
     state.stocks=rows;state.errors=errors;state.sample=false;
-    renderStockFilters();renderScreener();renderReadiness();renderHeatmap();renderSources();
+    renderStockFilters();renderScreener();renderReadiness();renderHeatmap();renderSources();matrixController.refresh();
   }catch(error){paint('screener-status',`Import rejected: ${error.message}. Previous data retained.`);}
 }
 async function loadCandles(file){
@@ -375,6 +377,13 @@ function checkPrice(){
 }
 restore();
 snapshotInit();
+const matrixController=initMatrix({
+  getStocks:()=>state.stocks,
+  isSample:()=>state.sample,
+  onSymbol:(symbol)=>{nav('screener');$('stock-search').value=symbol;renderScreener();},
+});
+initHostedMaps();
+matrixController.refresh();
 const comparisonController = initComparison({
   getSeries: () => {
     const records=Object.create(null);
@@ -408,7 +417,7 @@ for(const id of ['chart-mode','chart-layout','sma-toggle','rsi-toggle','chart-ba
 $('screen-view').addEventListener('change',renderScreenCharts);
 $('apply-chart-template').addEventListener('click',applyChartTemplate);
 $('save-chart-template').addEventListener('click',saveChartTemplate);
-$('sample-stocks').addEventListener('click',()=>{const {rows,errors}=normalizeStocks(SAMPLE);state.stocks=rows;state.errors=errors;state.sample=true;renderStockFilters();renderScreener();renderHeatmap();renderReadiness();renderSources();});
+$('sample-stocks').addEventListener('click',()=>{const {rows,errors}=normalizeStocks(SAMPLE);state.stocks=rows;state.errors=errors;state.sample=true;renderStockFilters();renderScreener();renderHeatmap();renderReadiness();renderSources();matrixController.refresh();});
 $('export-stocks').addEventListener('click',csvDownload);
 $('reset-filters').addEventListener('click',()=>fillPreset({}));
 $('save-preset').addEventListener('click',()=>{
