@@ -85,3 +85,41 @@ The CI workflow has been extended to include this module's tests and syntax chec
 6. Evaluate PyTorch research offline only after baselines and leakage-resistant backtesting.
 
 **No Finviz scraping, private API extraction, Finviz subscription bypass, credentials copied from browser storage, or reuse of proprietary scripts/assets is required or included.**
+
+## October 2026 deeper template and source evaluation
+
+| Source | Verified relevance | Adoption decision |
+| --- | --- | --- |
+| [Finviz Elite](https://finviz.com/elite) | Product behavior reference, premium real-time and screening integration | Study interface workflows only; do not copy copyrighted UI, private endpoints or redistribution-restricted data |
+| [Finviz chart template guide](https://finviz.com/blog/create-custom-chart-templates-for-screener-stock-pages-and-more/) | Templates shared across screener/chart/stock page; visual themes and indicators | Independently implement 4 preset styles with strict schema validation |
+| [Finviz screener chart collections](https://finviz.com/blog/see-your-screener-results-w-fully-customizable-charts/) | Filtered result tiles become a chart collection | Added bounded 24-card imported-OHLC view with honest NO_MATCHING_OHLC placeholders |
+| [OpenTerminal](https://github.com/LeonJS/openterminal) | React grid, keyboard palette and modular chart/quote components; root MIT LICENSE checked | Good **architecture study** reference. Do not import its third-party reverse-engineered quote endpoints without provider authorization |
+| [FinView EODHD demonstration](https://github.com/Kevinelectronics/finviz-clone-claude-code-eodhd) | React, Tailwind, Recharts, provider-gateway idea | README claims MIT, but root LICENSE file was absent on inspection. Do not copy its source until permissions and dependency terms are verified |
+| [Lightweight Charts](https://www.tradingview.com/lightweight-charts/) | Efficient financial Canvas engine, time scales, crosshair, streamed updates | Suitable future renderer after required Apache 2.0 NOTICE attribution and tested asset bundling |
+| [Apache ECharts](https://github.com/apache/echarts) | Candles, financial visualization, zoom, treemaps and heatmaps | Apache 2.0 alternative; verify bundle size and licenses before integration |
+
+### New chart-template capability
+
+- **Calm / low-noise:** historical line, 90 bars, SMA overlay, no RSI.
+- **Compact technical:** genuine OHLC candles, 60 bars, SMA, RSI.
+- **High-contrast:** line, 120 bars, SMA/RSI, accessible palette.
+- **Minimal reference:** line, 30 bars, no indicator overlays.
+
+Templates can be selected in Charts, applied consistently, and saved locally under user-provided names (maximum 20 custom templates). Color themes and chart settings are validated against an explicit allowlist; arbitrary markup/CSS input cannot become chart settings.
+
+A second screener result mode shows the **first 24 filtered stocks** as chart cards. Cards contain historical bars **only when the corresponding ticker has a separately imported and validated OHLC history**. Absent bars produce a visible unavailable state, not a substituted market chart. OHLC imports may carry an optional `symbol` field; if any record includes a symbol, every record must include one. Up to 200 different OHLC symbols are supported per file, with a total of 5,000 bars.
+
+### Expanded importer contract
+
+```csv
+symbol,date,open,high,low,close,volume
+ABC,2026-10-14,100,104,99,102,500000
+ABC,2026-10-15,102,105,101,104,450000
+XYZ,2026-10-14,50,52,48,51,200000
+```
+
+The records above illustrate the **file format only**, not actual prices. Do not interpret them as quotes. The existing symbol-free OHLC format remains supported as a single `IMPORTED` series; it must not be associated with a real ticker without accompanying identity evidence.
+
+**Further gaps relative to Finviz Elite:** the initial workspace still lacks licensed live stock quotes, after-hours trading data, complete equity universe, chart drawing tools, events/filing feeds, and provider-level fundamentals. Static Pages cannot run the server-side jobs needed for persistent alerts. Templates are locally saved only, not synced to an account. No machine-learning model or PyTorch model has been trained or validated, and the UI makes no predictive claims.
+
+New verification gate: `node --test tests/js/market-lab-templates.test.mjs`, included automatically by the existing test-glob workflow. Keep this draft PR unmerged until all relevant CI and browser smoke tests pass.
