@@ -53,3 +53,8 @@ test('returned overlap matrices are symmetric for valid aligned price data',()=>
   assert.equal(result.correlations[0][1],result.correlations[1][0]);
   assert.equal(result.correlations[0][0],1);
 });
+
+test('numerical overflow and non-finite returns are rejected rather than plotted',()=>{
+  assert.throws(()=>compareHistorical({AAA:series([['2026-01-01',1e-300],['2026-01-02',1e250]])},['AAA']),/Unsafe rebased price/);
+  assert.throws(()=>correlation([1,NaN,3],[1,2,3]),/Non-finite return sequence/);
+});
