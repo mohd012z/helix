@@ -1,15 +1,15 @@
-# Branch gate for the market board PR only. Not merged to main: on main the
-# daily snapshot (which has no board yet until this PR lands) would fail the
-# contract, so after merge the daily workflow's own green run is the board's
-# live verification. Delete this file in the merge commit or keep it
-# dormant — it only fires on its own branch.
+# Live provider gate for the market board.
+# Triggers on pull_request (a branch push alone never fires for PR branches —
+# GitHub evaluates workflows from the PR head on pull_request events).
+# Runs full generate -> normalize -> redact -> contract against the real
+# Twelve Data key, so PR checks show measured per-symbol coverage: plan-gated
+# symbols (e.g. XAG/USD on the free tier) appear LABELLED UNAVAILABLE in the
+# snapshot, which the contract accepts as long as >= MIN_OK symbols are OK.
 name: Market Board Provider Verify
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/market-board-commodities-fx-digital
+  pull_request:
 
 permissions:
   contents: read
