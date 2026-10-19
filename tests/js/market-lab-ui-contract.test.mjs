@@ -51,3 +51,13 @@ test('matrix and map controls exist; renderer cannot inject third-party markup',
   assert.doesNotMatch(matrix,/\binnerHTML\s*=/);
   assert.doesNotMatch(matrix,/\bfetch\s*\(/);
 });
+
+test('interactive renderer is opt-in, version pinned, and attributed',()=>{
+  assert.match(html,/id="enable-advanced-charts"/);
+  assert.match(html,/id="chart-engine-status"/);
+  assert.match(html,/TradingView Lightweight Charts/);
+  assert.match(html,/https:\/\/www\.tradingview\.com\//);
+  assert.match(ui,/lightweight-charts@5\.2\.1\/dist\/lightweight-charts\.standalone\.production\.js/);
+  assert.match(ui,/interactiveCharts=false/);
+  assert.match(ui,/releaseChartsWithin\(grid\)/);
+});
