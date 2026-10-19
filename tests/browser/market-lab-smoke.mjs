@@ -187,6 +187,10 @@ async function realCanvasScenario(origin){
     await page.locator('#chart-palette').selectOption('contrast');
     assert.ok(await page.locator('#chart-grid canvas').count()>=1,
       'chart vanished after palette repaint');
+    await click(page,'#theme-toggle');
+    assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('light')),true);
+    assert.ok(await page.locator('#chart-grid canvas').count()>=1,
+      'chart vanished after light/dark theme repaint');
     const metrics=await page.evaluate(()=>({
       client:document.documentElement.clientWidth,
       scroll:document.documentElement.scrollWidth,
