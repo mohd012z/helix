@@ -16,6 +16,7 @@ const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:
 const STORE_KEY='helix-market-lab-v1';
 const RESERVED_NAMES=new Set(['__proto__','constructor','prototype']);
 const CHART_BUNDLE_URL='https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js';
+const CHART_BUNDLE_SRI='sha384-KkYqTZlM13Zya6fVUF3IGCBOQ1ehFeJVVgxaVvD/0MebineF9EI8Jkd3NnWNChqN';
 let interactiveCharts=false;
 let interactiveChartLoading=false;
 const SAMPLE=[
@@ -372,6 +373,7 @@ async function enableLightweightCharts(){
       await new Promise((resolve,reject)=>{
         const script=document.createElement('script');
         script.src=CHART_BUNDLE_URL;
+        script.integrity=CHART_BUNDLE_SRI;
         script.crossOrigin='anonymous';
         script.onload=resolve;
         script.onerror=()=>reject(new Error('External chart library unavailable'));
