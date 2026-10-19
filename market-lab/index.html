@@ -109,6 +109,7 @@
       <section class="panel">
         <div class="panel-head"><div><h2>Interactive historical chart analysis</h2><p class="subtitle">Candles render only when genuine OHLC is supplied. XAU reference contains closes only.</p></div>
           <div class="tool-row">
+            <button type="button" id="enable-advanced-charts" title="Load an optional chart library from the internet">Enable interactive charts (online)</button><span class="pill" id="chart-engine-status" role="status" aria-live="polite">SVG charts · offline-ready</span>
             <label class="file-label">Import OHLC CSV/JSON<input id="ohlc-file" type="file" accept=".csv,.json,text/csv,application/json"></label>
             <label class="screen-only" for="chart-mode">Chart mode</label>
             <select id="chart-mode"><option value="line">Line</option><option value="candles">Candles (OHLC only)</option></select>
@@ -275,7 +276,7 @@
           <article><strong>Model research only</strong><p>PyTorch anomaly research requires time-respecting evaluation and explicit model uncertainty. No trained AI price forecasts are shipped.</p></article>
         </div></section></div>
     </section>
-    <footer class="foot">HELIX Market Lab • independent research UI • No affiliation with Finviz. All imported values are user supplied and unverified. No investment recommendations or automated trading. <a href="https://finviz.com/elite" target="_blank" rel="noopener noreferrer">Feature research reference</a>.</footer>
+    <footer class="foot">HELIX Market Lab • independent research UI • No affiliation with Finviz. All imported values are user supplied and unverified. No investment recommendations or automated trading. <a href="https://finviz.com/elite" target="_blank" rel="noopener noreferrer">Feature research reference</a>. <span class="tv-notice">TradingView Lightweight Charts™ · Copyright (с) 2025 TradingView, Inc. <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView ↗</a>. Optional interactive charts are supplied by TradingView under Apache-2.0.</span></footer>
   </main>
 </div>
 <script src="../xauusd-data.js"></script>
