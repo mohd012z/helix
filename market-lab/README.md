@@ -267,3 +267,8 @@ creation, imported OHLC rendering, pane/layout changes, responsive overflow,
 and error-free Chromium execution. It does not require a live market-data
 provider, and does not ship npm packages to production GitHub Pages.
 Physical Safari and Android browser behavior remains a separate release gate.
+
+The optional CDN script also carries a pinned SHA-384 Subresource Integrity
+value derived from the **exact** npm-published v5.2.1 standalone bundle, with
+CORS anonymous loading. A modified/mismatching response is rejected and HELIX
+falls back to its existing local SVG charts.
