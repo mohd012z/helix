@@ -140,6 +140,63 @@ async function oneScenario(test,origin) {
     throw new Error(test.name+': '+error.message);
   }finally{await context.close();}
 }
+
+/**
+ * Load the actual published v5.2.1 standalone bundle from the pinned test
+ * dependency. It is served by an explicit Playwright route, not fetched from
+ * the internet at test time. This proves Canvas rendering (not just a mock).
+ */
+async function realCanvasScenario(origin){
+  const asset=await readFile(join(root,'tests/browser/node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.js'));
+  assert.ok(asset.length>100_000,'unexpectedly small upstream chart distribution');
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const errors=[],requests=[];
+  await ctx.route('**/*',route=>{
+    const url=route.request().url();
+    if(url.startsWith(origin+'/'))return route.continue();
+    requests.push(url);
+    if(url==='https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js'){
+      return route.fulfill({status:200,contentType:'application/javascript',body:asset});
+    }
+    return route.abort('blockedbyclient');
+  });
+  const page=await ctx.newPage();
+  page.setDefaultTimeout(12000);
+  page.on('pageerror',e=>errors.push(e.message));
+  try{
+    await page.goto(origin+'/market-lab/index.html',{waitUntil:'domcontentloaded'});
+    await click(page,'[data-nav="charts"]');
+    await page.locator('#ohlc-file').setInputFiles({
+      name:'actual-lib-bars.json',mimeType:'application/json',
+      buffer:Buffer.from(JSON.stringify(ohlc)),
+    });
+    await page.locator('#ohlc-symbol option[value="AAA"]').waitFor({state:'attached'});
+    await page.locator('#chart-mode').selectOption('candles');
+    await click(page,'#enable-advanced-charts');
+    await page.locator('#chart-engine-status').filter({hasText:'TradingView charts'}).waitFor();
+    assert.equal(await page.locator('#chart-grid .lwc-chart-stage').count(),1);
+    assert.ok(await page.locator('#chart-grid canvas').count()>=1,
+      'real v5 Canvas rendering absent');
+    await page.locator('#chart-layout').selectOption('4');
+    assert.equal(await page.locator('#chart-grid .chart-box').count(),4);
+    assert.ok(await page.locator('#chart-grid canvas').count()>=1,
+      'chart vanished after 4-pane lifecycle replacement');
+    await page.locator('#chart-layout').selectOption('1');
+    await page.locator('#chart-palette').selectOption('contrast');
+    assert.ok(await page.locator('#chart-grid canvas').count()>=1,
+      'chart vanished after palette repaint');
+    const metrics=await page.evaluate(()=>({
+      client:document.documentElement.clientWidth,
+      scroll:document.documentElement.scrollWidth,
+    }));
+    assert.ok(metrics.scroll<=metrics.client+2,'real chart created horizontal overflow');
+    assert.deepEqual(requests,['https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js']);
+    assert.deepEqual(errors,[],'real v5 chart produced uncaught browser error');
+    await page.screenshot({path:join(output,'market-lab-real-lightweight-charts-mobile.png'),fullPage:true});
+    console.log('PASS actual official v5 Canvas: imported OHLC, responsive multi-pane, palette and cleanup');
+  }finally{await ctx.close();}
+}
+
 try{
   await mkdir(output,{recursive:true});
   await new Promise((resolveReady,reject)=>{
@@ -149,6 +206,7 @@ try{
   const origin='http://127.0.0.1:'+server.address().port;
   browser=await chromium.launch({headless:true});
   for(const test of screenshots)await oneScenario(test,origin);
+  await realCanvasScenario(origin);
   console.log('PASS ALL: '+screenshots.length+' full-page browser flows; all third-party requests blocked');
 }catch(error){
   console.error(error.stack??error);
