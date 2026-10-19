@@ -462,7 +462,16 @@ renderChartSelectors();
 renderTemplateList();
 renderCharts();
 $$('[data-nav]').forEach(button=>button.addEventListener('click',()=>nav(button.dataset.nav)));
-$('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');safeStore();});
+$('theme-toggle').addEventListener('click',()=>{
+  document.documentElement.classList.toggle('light');
+  safeStore();
+  if(interactiveCharts){
+    if(state.history.length)renderPriceChart($('overview-chart'),state.history,
+      {mode:'line',title:'XAU/USD historical daily closes',sma:true});
+    renderCharts();
+    renderScreenCharts();
+  }
+});
 $('enable-advanced-charts').addEventListener('click',()=>{void enableLightweightCharts();});
 $('stock-file').addEventListener('change',ev=>{void loadStocks(ev.target.files?.[0]);});
 $('ohlc-file').addEventListener('change',ev=>{void loadCandles(ev.target.files?.[0]);});
