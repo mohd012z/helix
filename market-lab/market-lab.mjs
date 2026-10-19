@@ -5,6 +5,7 @@ import {
 import { CHART_PRESETS, getTemplate, validateChartTemplate, normalizeSymbolCandles, availableScreenCharts } from './chart-templates.mjs';
 import { initComparison } from './compare-view.mjs';
 import { initMatrix, initHostedMaps } from './matrix-view.mjs';
+import { renderLightweightChart, releaseChartsWithin } from './chart-adapter.mjs';
 
 const $=id=>document.getElementById(id);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -14,6 +15,10 @@ const state={stocks:[],errors:[],filtered:[],candles:[],history:[],watch:new Set
 const NAV_TITLES={overview:'Research overview',screener:'Stock screener',charts:'Market charts',heatmap:'Performance heatmap',matrix:'Industry Matrix',maps:'Finviz-hosted Maps',watchlist:'Saved watchlist',compare:'Historical comparison',sources:'Data sources'};
 const STORE_KEY='helix-market-lab-v1';
 const RESERVED_NAMES=new Set(['__proto__','constructor','prototype']);
+const CHART_BUNDLE_URL='https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js';
+const CHART_BUNDLE_SRI='sha384-KkYqTZlM13Zya6fVUF3IGCBOQ1ehFeJVVgxaVvD/0MebineF9EI8Jkd3NnWNChqN';
+let interactiveCharts=false;
+let interactiveChartLoading=false;
 const SAMPLE=[
   {symbol:'EXM1',name:'Example Software (Fictional)',sector:'Technology',industry:'Sample',price:50,changePct:2.1,volume:100000,marketCap:5e9,pe:18},
   {symbol:'EXM2',name:'Example Energy (Fictional)',sector:'Energy',industry:'Sample',price:35,changePct:-1.8,volume:250000,marketCap:3e9,pe:9},
@@ -77,7 +82,7 @@ function snapshotInit(){
   if(state.history.length){
     paint('xau-last',nf(state.history.at(-1).close,2));
     paint('xau-kind',`Historical daily close • ${state.history.at(-1).date}`);
-    renderSvg($('overview-chart'),state.history,{mode:'line',title:'XAU/USD historical daily closes',sma:true});
+    renderPriceChart($('overview-chart'),state.history,{mode:'line',title:'XAU/USD historical daily closes',sma:true});
     paint('overview-meta',`Twelve Data via HELIX • ${state.history.length} published daily closes • Snapshot: ${quality.state}`);
   } else {
     showEmpty($('overview-chart'),'Verified historical XAU price series unavailable.');
@@ -106,6 +111,15 @@ function addSvg(parent,type,attributes={},text){
   return node;
 }
 function showEmpty(host,message){host.replaceChildren(make('div','no-data',message));}
+/**
+ * Prefer the explicitly enabled v5 renderer, but retain SVG for offline use,
+ * malformed/unavailable data and genuine browser/library runtime failures.
+ */
+function renderPriceChart(host,series,options={}){
+  if(interactiveCharts && renderLightweightChart(host,series,options))return;
+  releaseChartsWithin(host);
+  renderSvg(host,series,options);
+}
 function renderSvg(host,series,{mode='line',title='Historical series',sma:showSma=false,showRsi=false,bars=90,palette='calm'}={}){
   const colors={
     calm:{line:'#6ce0d3',up:'#4edaac',down:'#fd718e',sma5:'#e9be79',sma20:'#6ea8ff'},
@@ -206,7 +220,7 @@ function renderScreenCharts() {
   $('screen-charts').hidden=!chartMode;
   $('screen-chart-summary').hidden=!chartMode;
   if(!chartMode)return;
-  const host=$('screen-charts');host.replaceChildren();
+  const host=$('screen-charts');releaseChartsWithin(host);host.replaceChildren();
   const selected=availableScreenCharts(state.filtered,state.ohlcBySymbol,{max:24});
   const bars=Number($('chart-bars').value)||90,palette=$('chart-palette').value;
   if(!selected.length){host.append(make('p','empty','No matching securities to chart.'));paint('screen-chart-summary','No rows available.');return;}
@@ -214,7 +228,7 @@ function renderScreenCharts() {
     const box=make('article','chart-box'),h=make('h3','',item.symbol),plot=make('div','chart');
     box.append(h,plot);host.append(box);
     if(item.state!=='AVAILABLE'){showEmpty(plot,'No matching imported OHLC.');continue;}
-    renderSvg(plot,item.candles,{mode:'candles',title:item.symbol+' imported OHLC',bars,palette});
+    renderPriceChart(plot,item.candles,{mode:'candles',title:item.symbol+' imported OHLC',bars,palette});
   }
   const present=selected.filter(x=>x.state==='AVAILABLE').length;
   paint('screen-chart-summary',`${present} of ${selected.length} displayed symbols have valid imported OHLC. Only the first 24 filtered results are shown. Unverified local files; not streaming quotes.`);
@@ -289,7 +303,7 @@ function saveChartTemplate(){
 }
 function renderCharts(){
   const grid=$('chart-grid'),mode=$('chart-mode').value,panes=Number($('chart-layout').value);
-  grid.classList.toggle('multi',panes>1);grid.replaceChildren();
+  grid.classList.toggle('multi',panes>1);releaseChartsWithin(grid);grid.replaceChildren();
   const symbol=$('ohlc-symbol').value;
   state.candles=state.ohlcBySymbol[symbol]??[];
   const settings={sma:$('sma-toggle').checked,showRsi:$('rsi-toggle').checked,
@@ -303,7 +317,7 @@ function renderCharts(){
     const entry=entries[index]??{label:`Panel ${index+1}: no additional provider series`,series:[],mode:'line'};
     const box=make('div','chart-box'),head=make('h3','',entry.label),plot=make('div','chart');
     box.append(head,plot);grid.append(box);
-    renderSvg(plot,entry.series,{mode:entry.mode,title:entry.label,...settings});
+    renderPriceChart(plot,entry.series,{mode:entry.mode,title:entry.label,...settings});
   }
   paint('chart-provenance',mode==='candles'?'IMPORTED OHLC IS UNVERIFIED':'HELIX DAILY CLOSE + UNVERIFIED IMPORTS');
   paint('chart-feedback',`HELIX closes: ${state.history.length} • Selected symbol: ${symbol||'none'} • Imported bars: ${state.candles.length}. No licensed live feed is connected.`);
@@ -343,6 +357,48 @@ async function loadCandles(file){
     state.candles=mapping[active]??[];
     renderCharts();renderScreenCharts();renderSources();comparisonController.refresh();
   }catch(error){paint('chart-feedback',`OHLC rejected: ${error.message}. Previous series retained.`);}
+}
+/**
+ * External chart code is loaded only after an explicit click. The normal page,
+ * offline smoke tests, and user-imported research remain dependency-free.
+ */
+async function enableLightweightCharts(){
+  if(interactiveChartLoading||interactiveCharts)return;
+  interactiveChartLoading=true;
+  const button=$('enable-advanced-charts');
+  button.disabled=true;
+  paint('chart-engine-status','Loading pinned TradingView chart library…');
+  try{
+    if(!globalThis.LightweightCharts){
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src=CHART_BUNDLE_URL;
+        script.integrity=CHART_BUNDLE_SRI;
+        script.crossOrigin='anonymous';
+        script.onload=resolve;
+        script.onerror=()=>reject(new Error('External chart library unavailable'));
+        document.head.appendChild(script);
+      });
+    }
+    if(typeof globalThis.LightweightCharts?.createChart!=='function'||
+       !globalThis.LightweightCharts?.CandlestickSeries||
+       !globalThis.LightweightCharts?.LineSeries){
+      throw new Error('Unsupported chart library API');
+    }
+    interactiveCharts=true;
+    button.textContent='Interactive charts enabled';
+    paint('chart-engine-status','TradingView charts · historical data only');
+    if(state.history.length)renderPriceChart($('overview-chart'),state.history,
+      {mode:'line',title:'XAU/USD historical daily closes',sma:true});
+    renderCharts();
+    renderScreenCharts();
+  }catch{
+    interactiveCharts=false;
+    button.disabled=false;
+    paint('chart-engine-status','SVG fallback · external library unavailable; retry when online');
+  }finally{
+    interactiveChartLoading=false;
+  }
 }
 function csvDownload(){
   if(!state.filtered.length){paint('screener-status','Nothing to export.');return;}
@@ -408,7 +464,17 @@ renderChartSelectors();
 renderTemplateList();
 renderCharts();
 $$('[data-nav]').forEach(button=>button.addEventListener('click',()=>nav(button.dataset.nav)));
-$('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');safeStore();});
+$('theme-toggle').addEventListener('click',()=>{
+  document.documentElement.classList.toggle('light');
+  safeStore();
+  if(interactiveCharts){
+    if(state.history.length)renderPriceChart($('overview-chart'),state.history,
+      {mode:'line',title:'XAU/USD historical daily closes',sma:true});
+    renderCharts();
+    renderScreenCharts();
+  }
+});
+$('enable-advanced-charts').addEventListener('click',()=>{void enableLightweightCharts();});
 $('stock-file').addEventListener('change',ev=>{void loadStocks(ev.target.files?.[0]);});
 $('ohlc-file').addEventListener('change',ev=>{void loadCandles(ev.target.files?.[0]);});
 for(const id of ['stock-search','sector-filter','min-cap','min-volume','min-change','sort-field','sort-dir'])$(id).addEventListener('input',renderScreener);
