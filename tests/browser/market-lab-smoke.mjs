@@ -6,6 +6,7 @@
  *   node tests/browser/market-lab-smoke.mjs
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, mkdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { dirname, extname, join, resolve, sep } from 'node:path';
@@ -149,6 +150,7 @@ async function oneScenario(test,origin) {
 async function realCanvasScenario(origin){
   const asset=await readFile(join(root,'tests/browser/node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.js'));
   assert.ok(asset.length>100_000,'unexpectedly small upstream chart distribution');
+  console.log('OFFICIAL_BUNDLE_SRI sha384-'+createHash('sha384').update(asset).digest('base64'));
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const errors=[],requests=[];
   await ctx.route('**/*',route=>{
