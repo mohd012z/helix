@@ -118,6 +118,19 @@ async function oneScenario(test,origin) {
     assert.equal(await page.locator('#map-embed-host iframe').count(),0);
     const nonFinviz=external.filter(url=>!url.startsWith('https://finviz.com/map'));
     assert.deepEqual(nonFinviz,[],'unexpected external web requests');
+    // Opt-in external chart loader is blocked by this offline browser test.
+    // Failure must preserve imported OHLC in the original SVG chart.
+    await click(page,'[data-nav="charts"]');
+    await page.locator('#chart-mode').selectOption('candles');
+    assert.ok(await page.locator('#chart-grid svg').count()>0,'offline OHLC SVG missing');
+    await click(page,'#enable-advanced-charts');
+    await page.locator('#chart-engine-status').filter({hasText:'SVG fallback'}).waitFor();
+    assert.ok(await page.locator('#chart-grid svg').count()>0,'SVG fallback lost after CDN failure');
+    assert.ok(external.some(url=>url==='https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js'),
+      'opt-in chart loader must request only a pinned package');
+    const unexpected=external.filter(url=>!url.startsWith('https://finviz.com/map') &&
+      url!=='https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js');
+    assert.deepEqual(unexpected,[],'unexpected third-party network');
     await click(page,'[data-nav="matrix"]');
     await page.screenshot({path:join(output,'market-lab-'+test.name+'.png'),fullPage:true});
     assert.deepEqual(errors,[],'uncaught JavaScript errors');
