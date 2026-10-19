@@ -1,0 +1,34 @@
+name: Codespaces configuration check
+
+on:
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/codespaces-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Validate lightweight Codespaces contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path(".devcontainer/devcontainer.json").read_text(encoding="utf-8"))
+          assert config["image"] == "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm"
+          assert config["features"]["ghcr.io/devcontainers/features/node:1"]["version"] == "22"
+          assert config["remoteUser"] == "vscode"
+          assert config["postCreateCommand"] == "python -m pip install --disable-pip-version-check -r requirements.txt"
+          assert Path("requirements.txt").is_file()
+          assert not config.get("privileged", False)
+          assert "ms-python.python" in config["customizations"]["vscode"]["extensions"]
+          print("PASS: HELIX Codespaces configuration contract")
+          PY
