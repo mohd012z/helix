@@ -257,3 +257,13 @@ lookback, teardown and failure fallback. Existing isolated browser smoke
 tests additionally block the CDN and verify that real imported OHLC
 remains usable in SVG form. This does NOT prove rendering with the actual
 third-party script in Safari/Android; that is a separate release gate.
+
+### Real-library Chromium verification
+
+The browser test installation also pins `lightweight-charts@5.2.1` as
+a **test-only dependency**. The test routes HELIX's opt-in bundle URL to the
+official installed standalone JavaScript, then verifies actual Canvas
+creation, imported OHLC rendering, pane/layout changes, responsive overflow,
+and error-free Chromium execution. It does not require a live market-data
+provider, and does not ship npm packages to production GitHub Pages.
+Physical Safari and Android browser behavior remains a separate release gate.
