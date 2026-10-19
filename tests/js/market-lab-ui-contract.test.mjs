@@ -59,5 +59,7 @@ test('interactive renderer is opt-in, version pinned, and attributed',()=>{
   assert.match(html,/https:\/\/www\.tradingview\.com\//);
   assert.match(ui,/lightweight-charts@5\.2\.1\/dist\/lightweight-charts\.standalone\.production\.js/);
   assert.match(ui,/interactiveCharts=false/);
+  assert.match(ui,/const CHART_BUNDLE_SRI='sha384-/);
+  assert.match(ui,/script\.integrity=CHART_BUNDLE_SRI/);
   assert.match(ui,/releaseChartsWithin\(grid\)/);
 });
