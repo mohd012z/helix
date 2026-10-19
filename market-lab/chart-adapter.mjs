@@ -92,8 +92,8 @@ export function renderLightweightChart(host, rows, options = {}, library = globa
       autoSize,
       width:Math.max(host.clientWidth || 300, 300),
       height:260,
-      attributionLogo:true,
       layout:{
+        attributionLogo:true,
         background:{type:'solid',color:light?'#ffffff':'#111c2a'},
         textColor:light?'#142334':'#c7d4e6',
       },
