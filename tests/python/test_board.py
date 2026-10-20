@@ -61,6 +61,49 @@ class RateLimitTest(unittest.TestCase):
         finally:
             up.requests.get = orig
 
+    def test_429_daily_quota_classification_does_not_leak_response(self):
+        import scripts.update_xauusd as up
+        calls = []
+
+        class FakeResp:
+            status_code = 429
+            def json(self):
+                return {"status": "error",
+                        "message": "You have exceeded your daily API quota. apikey=SHOULD_NOT_APPEAR"}
+
+        original = up.requests.get
+        try:
+            up.requests.get = lambda *_args, **_kw: (calls.append(1) or FakeResp())
+            with self.assertRaises(up.RateLimitError) as caught:
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(caught.exception.scope, "DAILY")
+            self.assertEqual(len(calls), 1)
+            self.assertNotIn("SHOULD_NOT_APPEAR", str(caught.exception))
+        finally:
+            up.requests.get = original
+
+    def test_200_minute_quota_classification(self):
+        import scripts.update_xauusd as up
+        calls = []
+
+        class FakeResp:
+            status_code = 200
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {"status": "error",
+                        "message": "The maximum number of calls per minute has been reached"}
+
+        original = up.requests.get
+        try:
+            up.requests.get = lambda *_args, **_kw: (calls.append(1) or FakeResp())
+            with self.assertRaises(up.RateLimitError) as caught:
+                up.get_json("https://example.test", retries=3)
+            self.assertEqual(caught.exception.scope, "MINUTE")
+            self.assertEqual(len(calls), 1)
+        finally:
+            up.requests.get = original
+
     def test_rate_limit_is_a_source_error(self):
         import scripts.update_xauusd as up
         self.assertTrue(issubclass(up.RateLimitError, up.SourceError))
@@ -178,6 +221,202 @@ class CollectBoardTest(unittest.TestCase):
         )
         self.assertEqual(board["symbols"]["XAG/USD"]["last"], 38.123)
         self.assertEqual(board["symbols"]["EUR/AUD"]["last"], 1.23457)
+
+
+
+class ProviderRecoveryTest(unittest.TestCase):
+    """An insufficient 11/16 board can recover real data, never counterfeit it."""
+
+    @staticmethod
+    def incomplete_board(reason="429 rate limit"):
+        names=[
+            "EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD",
+            "EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","EUR/AUD","XAU/USD","XAG/USD",
+            "BTC/USD","ETH/USD",
+        ]
+        symbols={}
+        for i,symbol in enumerate(names):
+            ok=i<11
+            symbols[symbol]={
+                "symbol":symbol, "group":"major", "assetClass":"fx",
+                "ok":ok, "last":1.0 if ok else None,
+                "changePct":0.0 if ok else None,
+                "barDate":"2026-10-17" if ok else None,
+                "detail":"verified" if ok else reason,
+            }
+        return {"symbols":symbols,"priceType":"DAILY_CLOSE"}
+
+    def test_recovers_temporary_11_of_16_after_cooldown(self):
+        from scripts.update_xauusd import recover_transient_board
+        board=self.incomplete_board()
+        sleeps=[]
+        calls=[]
+        def fetch(key,symbol,outputsize):
+            calls.append((symbol,outputsize))
+            return fake_values(symbol,[1.234,1.2],["2026-10-17","2026-10-16"]),symbol
+        result=recover_transient_board("TESTKEY",board,{},fetch=fetch,sleep=sleeps.append)
+        self.assertEqual(result,1)
+        self.assertEqual(sleeps,[65.0])
+        self.assertEqual(len(calls),1)
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),12)
+        value=board["symbols"]["EUR/AUD"]
+        self.assertEqual(value["barDate"],"2026-10-17")
+        self.assertGreater(value["last"],0)
+
+    def test_does_not_retry_permanent_plan_denials_or_fake_data(self):
+        from scripts.update_xauusd import recover_transient_board
+        board=self.incomplete_board("Plan does not include symbol. Upgrade your subscription.")
+        calls=[]
+        result=recover_transient_board("KEY",board,{},fetch=lambda *_: calls.append(1),sleep=lambda *_: calls.append("sleep"))
+        self.assertEqual(result,0)
+        self.assertEqual(calls,[])
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),11)
+
+    def test_second_429_stops_recovery_without_false_success(self):
+        from scripts.update_xauusd import recover_transient_board,RateLimitError
+        board=self.incomplete_board()
+        attempts=[]
+        def fetch(key,symbol,outputsize):
+            attempts.append(symbol)
+            raise RateLimitError("429")
+        self.assertEqual(recover_transient_board("KEY",board,{},fetch=fetch,sleep=lambda _:None),0)
+        self.assertEqual(len(attempts),1)
+        self.assertEqual(sum(x["ok"] is True for x in board["symbols"].values()),11)
+
+    def test_bogus_provider_close_and_date_are_not_promoted(self):
+        from scripts.update_xauusd import recover_transient_board
+        for values in [
+            fake_values("EUR/AUD",[float("nan"),1.0],["2026-10-17","2026-10-16"]),
+            fake_values("EUR/AUD",[1.0,1.0],["bad-date","2026-10-16"]),
+        ]:
+            board=self.incomplete_board()
+            recover_transient_board("KEY",board,{},fetch=lambda *_:(values,None),sleep=lambda _:None)
+            self.assertFalse(board["symbols"]["EUR/AUD"]["ok"])
+            self.assertIsNone(board["symbols"]["EUR/AUD"]["last"])
+
+    def test_coverage_diagnostic_lists_symbols_and_redacts_params(self):
+        from scripts.update_xauusd import print_board_coverage
+        from io import StringIO
+        from contextlib import redirect_stdout
+        board=self.incomplete_board("provider rejected apikey=SECRET-CANNOT-PRINT")
+        capture=StringIO()
+        with redirect_stdout(capture):
+            print_board_coverage(board)
+        output=capture.getvalue()
+        self.assertIn("11/16 verified; contract minimum 12",output)
+        self.assertIn("EUR/AUD",output)
+        self.assertNotIn("SECRET-CANNOT-PRINT",output)
+        self.assertIn("[REDACTED]",output)
+
+
+
+
+class MandatoryGoldCooldownTest(unittest.TestCase):
+    def test_gold_retries_exactly_once_after_rate_limit(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls=[]
+        sleeps=[]
+        def fake_fetch(key,symbol,outputsize):
+            calls.append((symbol,outputsize))
+            if len(calls)==1:
+                raise RateLimitError("429")
+            return fake_values(symbol,[100,101],["2026-10-17","2026-10-16"]),symbol
+        values,_=fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=sleeps.append)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(sleeps,[65.0])
+        self.assertEqual(values[0]["datetime"],"2026-10-17")
+
+    def test_third_gold_429_preserves_hard_failure(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls=[]
+        def fake_fetch(key,symbol,outputsize):
+            calls.append(symbol)
+            raise RateLimitError("429")
+        with self.assertRaises(RateLimitError):
+            fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=lambda _:None)
+        self.assertEqual(calls,["XAU/USD","XAU/USD","XAU/USD"])
+
+    def test_recovery_after_two_429_waits_65_and_125(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        attempts, sleeps = [], []
+        def fake_fetch(key, symbol, outputsize):
+            attempts.append((symbol, outputsize))
+            if len(attempts) < 3:
+                raise RateLimitError("429")
+            return fake_values(symbol,[100.0,99.0],["2026-10-17","2026-10-16"]), symbol
+        values, _ = fetch_mandatory_xau(
+            "KEY", fetch=fake_fetch, sleep=sleeps.append, outputsize=60
+        )
+        self.assertEqual(len(attempts), 3)
+        self.assertEqual(attempts, [("XAU/USD", 60)] * 3)
+        self.assertEqual(sleeps, [65.0, 125.0])
+        self.assertEqual(values[0]["datetime"], "2026-10-17")
+
+    def test_bad_outputsize_cannot_disable_rate_limit_budget(self):
+        from scripts.update_xauusd import fetch_mandatory_xau
+        for bad in [0, 1, 371, True, "60"]:
+            with self.assertRaises(ValueError):
+                fetch_mandatory_xau("KEY", fetch=lambda *_: self.fail("unexpected provider request"), outputsize=bad)
+
+    def test_daily_quota_refuses_all_retries(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, RateLimitError
+        calls = []
+        def exhausted(*_args):
+            calls.append(1)
+            raise RateLimitError("429 daily provider rate limit", scope="DAILY")
+        with self.assertRaises(RateLimitError) as captured:
+            fetch_mandatory_xau(
+                "KEY", fetch=exhausted,
+                sleep=lambda *_: self.fail("daily quota must never sleep/retry")
+            )
+        self.assertEqual(captured.exception.scope, "DAILY")
+        self.assertEqual(len(calls), 1)
+
+    def test_gold_plan_denial_has_no_retry(self):
+        from scripts.update_xauusd import fetch_mandatory_xau, SourceError
+        attempts=[]
+        def fake_fetch(*_):
+            attempts.append(1)
+            raise SourceError("subscription not authorized")
+        with self.assertRaises(SourceError):
+            fetch_mandatory_xau("KEY",fetch=fake_fetch,sleep=lambda _:self.fail("should not retry"))
+        self.assertEqual(attempts,[1])
+
+
+class BoardContractDiagnosticsTest(unittest.TestCase):
+    def test_11_of_16_failure_names_the_unavailable_symbols_without_secret_text(self):
+        import json
+        from scripts.verify_board import CANONICAL, verify_snapshot_text, MIN_OK
+        self.assertEqual(MIN_OK,12)
+        board={"priceType":"DAILY_CLOSE","symbols":{}}
+        for i,symbol in enumerate(CANONICAL):
+            success=i<11
+            board["symbols"][symbol]={
+                "ok":success,
+                "last":1.1 if success else None,
+                "changePct":0.2 if success else None,
+                "barDate":"2026-10-17" if success else None,
+                "detail":"429 rate limit" if i==11 else (
+                    "plan does not include this symbol, apikey=SECRET" if not success else "valid"
+                ),
+            }
+        text="window.XAUUSD_DATA = "+json.dumps({"board":board})+";"
+        errors=verify_snapshot_text(text)
+        self.assertIn("only 11/16 symbols OK, minimum is 12",errors)
+        self.assertTrue(any("RATE_LIMITED" in message for message in errors))
+        self.assertTrue(any("PLAN_OR_SYMBOL_RESTRICTED" in message for message in errors))
+        self.assertFalse(any("SECRET" in message for message in errors))
+
+    def test_contract_rejects_boolean_prices_and_nonrecord_entries(self):
+        import json
+        from scripts.verify_board import CANONICAL, verify_snapshot_text
+        symbols={symbol:{"ok":True,"last":1.0,"changePct":0.1,"barDate":"2026-10-17"} for symbol in CANONICAL}
+        symbols["EUR/USD"]["last"]=True
+        symbols["ETH/USD"]="not a record"
+        text="window.XAUUSD_DATA = "+json.dumps({"board":{"priceType":"DAILY_CLOSE","symbols":symbols}})+";"
+        problems=verify_snapshot_text(text)
+        self.assertTrue(any("EUR/USD: ok=True" in item for item in problems))
+        self.assertTrue(any("ETH/USD: entry must be an object" in item for item in problems))
 
 
 if __name__ == "__main__":
