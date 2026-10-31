@@ -5,6 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'macro/**'
+      - 'market-lab/**'
       - 'data/**'
       - 'scripts/**'
       - 'config/**'
@@ -20,6 +21,7 @@ on:
     paths:
       - 'index.html'
       - 'macro/**'
+      - 'market-lab/**'
       - 'data/**'
       - 'scripts/**'
       - 'config/**'
@@ -99,6 +101,14 @@ jobs:
           node --check macro/ui/trade-plan-integration.mjs
           node --check macro/ui/runtime-safety.js
           node --check macro/ui/app.mjs
+          node --check market-lab/core.mjs
+          node --check market-lab/chart-templates.mjs
+          node --check market-lab/comparison.mjs
+          node --check market-lab/compare-view.mjs
+          node --check market-lab/matrix.mjs
+          node --check market-lab/matrix-view.mjs
+          node --check market-lab/map-embed.mjs
+          node --check market-lab/market-lab.mjs
 
       - name: Install Python dependencies for collector tests
         run: |
