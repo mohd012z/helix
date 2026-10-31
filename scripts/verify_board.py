@@ -43,14 +43,16 @@ def failure_class(detail: str) -> str:
         "not available on", "invalid symbol", "access denied",
     )):
         return "PLAN_OR_SYMBOL_RESTRICTED"
+    # Daily exhaustion must take precedence over generic HTTP 429/rate-limit
+    # wording; minute-limit retries cannot replenish a daily allowance.
+    if "daily" in lower and ("limit" in lower or "quota" in lower):
+        return "DAILY_PROVIDER_QUOTA"
     if any(word in lower for word in ("429", "rate limit", "per minute", "limit reached")):
         return "RATE_LIMITED"
     if any(word in lower for word in ("timeout", "timed out", "502", "503", "504", "connection")):
         return "TRANSIENT_PROVIDER_ERROR"
     if any(word in lower for word in ("no time-series", "no values", "no daily observations")):
         return "NO_PROVIDER_BARS"
-    if "daily" in lower and ("limit" in lower or "quota" in lower):
-        return "DAILY_PROVIDER_QUOTA"
     return "UNAVAILABLE_UNCLASSIFIED"
 
 
