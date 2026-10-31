@@ -419,5 +419,27 @@ class BoardContractDiagnosticsTest(unittest.TestCase):
         self.assertTrue(any("ETH/USD: entry must be an object" in item for item in problems))
 
 
+
+class ProviderFailureClassificationTest(unittest.TestCase):
+    def test_daily_quota_precedes_generic_429_and_rate_limit_wording(self):
+        from scripts.verify_board import failure_class
+        for message in (
+            "HTTP 429: daily rate limit reached",
+            "Daily API quota exhausted",
+            "You have exceeded the daily limit",
+        ):
+            with self.subTest(message=message):
+                self.assertEqual(failure_class(message), "DAILY_PROVIDER_QUOTA")
+
+    def test_minute_quota_remains_rate_limited(self):
+        from scripts.verify_board import failure_class
+        self.assertEqual(failure_class("HTTP 429: per minute rate limit reached"), "RATE_LIMITED")
+
+    def test_failure_category_does_not_echo_provider_secrets(self):
+        from scripts.verify_board import failure_class
+        result = failure_class("daily quota exhausted apikey=DO_NOT_PRINT")
+        self.assertEqual(result, "DAILY_PROVIDER_QUOTA")
+        self.assertNotIn("DO_NOT_PRINT", result)
+
 if __name__ == "__main__":
     unittest.main()
