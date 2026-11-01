@@ -226,3 +226,49 @@ The browser workflow uses `mcr.microsoft.com/playwright:v1.64.0-noble` to match 
 **Release is still held:** no physical mobile device verification, no source-backed real Finviz member iframe payload, no authenticated/licensed real-time stock data, no accessible screen-reader audit, and no deployment validation on production Pages. Do not merge until all required branch policy and source verification checks are satisfied.
 
 **Imported currency warning:** HELIX currently assumes values called `marketCap` represent USD and does not convert exchange rates. For non-USD data, tier assignments and `$` formatting may be wrong; use normalized/authorized USD values or treat the classification as unverified. This warning now appears inside both Screener and Matrix views.
+
+## Optional Lightweight Charts v5 integration (stacked PR)
+
+The Charts tab provides **Enable interactive charts (online)**. The first click
+loads the pinned `lightweight-charts@5.2.1` standalone browser build from unpkg.
+No network request is made until the user explicitly clicks. If the CDN is
+blocked, offline, or incompatible, the existing SVG renderer stays available.
+
+The `chart-adapter.mjs` maps validated HELIX `{date,close}` to line-chart
+`{time,value}`, and genuine `{date,open,high,low,close}` to candles.
+Optional volume and SMA overlays are computed only from present source values.
+No new quote feed, synthetic pricing, API secret, brokerage control, or
+automatic order placement is introduced. Real-time XAU and equities remain
+unavailable without separate provider entitlements.
+
+The adapter disposes old v5 canvases before re-rendering, preserves the
+existing per-symbol chart layout, and displays the historical RSI readout.
+The original SVG chart and Compare view remain untouched as fallbacks.
+
+**License:** TradingView Lightweight Charts™ (Copyright (с) 2025 TradingView,
+Inc.) is Apache-2.0 licensed; the publicly visible Market Lab footer includes
+the NOTICE and link to https://www.tradingview.com/. The official package is
+remote on explicit opt-in only; fully offline v5 rendering would require a
+verified vendored build and compatible license/NOTICE distribution.
+
+**Testing:** `node --test tests/js/market-lab-chart-adapter.test.mjs` covers
+date/price validation, no fictitious candles/volume, native chart calls, SMA
+lookback, teardown and failure fallback. Existing isolated browser smoke
+tests additionally block the CDN and verify that real imported OHLC
+remains usable in SVG form. This does NOT prove rendering with the actual
+third-party script in Safari/Android; that is a separate release gate.
+
+### Real-library Chromium verification
+
+The browser test installation also pins `lightweight-charts@5.2.1` as
+a **test-only dependency**. The test routes HELIX's opt-in bundle URL to the
+official installed standalone JavaScript, then verifies actual Canvas
+creation, imported OHLC rendering, pane/layout changes, responsive overflow,
+and error-free Chromium execution. It does not require a live market-data
+provider, and does not ship npm packages to production GitHub Pages.
+Physical Safari and Android browser behavior remains a separate release gate.
+
+The optional CDN script also carries a pinned SHA-384 Subresource Integrity
+value derived from the **exact** npm-published v5.2.1 standalone bundle, with
+CORS anonymous loading. A modified/mismatching response is rejected and HELIX
+falls back to its existing local SVG charts.

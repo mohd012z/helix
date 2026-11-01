@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Isolated browser smoke checks for HELIX Market Lab; not shipped to GitHub Pages",
   "devDependencies": {
-    "playwright": "1.64.0"
+    "playwright": "1.64.0",
+    "lightweight-charts": "5.2.1"
   }
 }
