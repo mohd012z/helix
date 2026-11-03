@@ -88,9 +88,11 @@ export function makeAnswerCallback({api, log = makeNoopLog()} = {}) {
 }
 
 export function makeRespond({api, log = makeNoopLog()} = {}) {
-  return async ({chatId, text, parse_mode}) => {
-    const x = await api('sendMessage', {chat_id: chatId, text, parse_mode});
-    log(`response_send=OK message_id=${x?.message_id ?? '?'}`);
+  return async ({chatId, text, parse_mode, reply_markup}) => {
+    const payload = {chat_id: chatId, text, parse_mode};
+    if (reply_markup && Array.isArray(reply_markup) && reply_markup.length) payload.reply_markup = reply_markup;
+    const x = await api('sendMessage', payload);
+    log(`response_send=OK message_id=${x?.message_id ?? '?'}${reply_markup?.length ? ' keyboard=yes' : ''}`);
     return x;
   };
 }
