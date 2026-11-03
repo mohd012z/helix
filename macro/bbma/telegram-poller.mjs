@@ -66,31 +66,37 @@ export function makeOffsetStore({fs, path, filePath, log = makeNoopLog()} = {}) 
 }
 
 export function makeAnswerCallback({api, log = makeNoopLog()} = {}) {
-  const answer = async ({callbackQueryId, text}) => {
-    try {
-      await api('answerCallbackQuery', {callback_query_id: callbackQueryId, text, show_alert: false, show_checkmark: true});
-      log('callback_ack=OK');
-      return true;
-    } catch (e) {
-      // 409 = another poller answered first (or is mid-answer) — one retry is
-      // enough: if we still lose, the other consumer owns the ack.
-      if (e?.status === 409) return answer({callbackQueryId, text});
-      // 400 STALE: Telegram keeps callback queries only ~24h. Do NOT throw —
-      // the reply message itself is still worth sending.
-      if (e?.status === 400) {
-        log('callback_ack=STALE_400');
-        return false;
+  return async ({callbackQueryId, text}) => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await api('answerCallbackQuery', {callback_query_id: callbackQueryId, text, show_alert: false});
+        log('callback_ack=OK');
+        return true;
+      } catch (e) {
+        // A conflict can be transient, but retries must be bounded. Repeated
+        // conflicts must not trap the callback poller in recursive retries.
+        if (e?.status === 409) {
+          if (attempt === 0) continue;
+          log('callback_ack=CONFLICT_409');
+          return false;
+        }
+        // Expired callback queries cannot be acknowledged. The reply message
+        // may still be useful, so do not abort the callback handler.
+        if (e?.status === 400) {
+          log('callback_ack=STALE_400');
+          return false;
+        }
+        throw e;
       }
-      throw e;
     }
+    return false;
   };
-  return answer;
 }
 
 export function makeRespond({api, log = makeNoopLog()} = {}) {
   return async ({chatId, text, parse_mode, reply_markup}) => {
     const payload = {chat_id: chatId, text, parse_mode};
-    if (reply_markup && Array.isArray(reply_markup) && reply_markup.length) payload.reply_markup = reply_markup;
+    if (Array.isArray(reply_markup) && reply_markup.length) payload.reply_markup = {inline_keyboard: reply_markup};
     const x = await api('sendMessage', payload);
     log(`response_send=OK message_id=${x?.message_id ?? '?'}${reply_markup?.length ? ' keyboard=yes' : ''}`);
     return x;
