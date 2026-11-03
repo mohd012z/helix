@@ -20,24 +20,34 @@ export function findObservationBySymbol(byId, symbol) {
 
 /**
  * rows: board.symbols object (symbol -> {symbol, ok, last, changePct}).
- * Returns the keyboard row: [📈 BBMA Dashboard] + up to 3 symbol buttons
- * (primary symbol first). Symbol buttons carry bbma:status:<SYMBOL> so a tap
- * re-answers the status card for THAT symbol.
+ * Returns the keyboard row: [📈 BBMA Dashboard] + up to 3 symbol buttons.
+ * `pinned` symbols are placed first (in pinned order, only if present on the
+ * board); remaining slots fill from board order. A symbol button carries
+ * bbma:status:<SYMBOL> so a tap re-answers the status card for THAT symbol.
  */
-export function buildDashboardRow({rows = {}, primarySymbol = 'XAUUSD', dashboardUrl = DASHBOARD_DEFAULT} = {}) {
+export function buildDashboardRow({rows = {}, pinned = null, dashboardUrl = DASHBOARD_DEFAULT} = {}) {
+  const pinList = (Array.isArray(pinned) ? pinned : ['XAUUSD', 'BTCUSD']).map(normalizeSymbolKey).filter(Boolean);
   const row = [{text: '📈 BBMA Dashboard', url: dashboardUrl ?? DASHBOARD_DEFAULT}];
-  const primaryKey = normalizeSymbolKey(primarySymbol);
-  const seen = new Set([primaryKey]);
+  const byKey = new Map();
   for (const value of Object.values(rows ?? {})) {
-    if (row.length >= 4) break;
-    if (!value || value.ok === false) continue;
-    const sym = String(value.symbol ?? '');
-    const key = normalizeSymbolKey(sym);
-    if (!key || seen.has(key)) continue;
+    if (!value) continue;
+    const key = normalizeSymbolKey(value.symbol);
+    if (key) byKey.set(key, value);
+  }
+  const seen = new Set();
+  const add = (value) => {
+    if (row.length >= 4) return;
+    if (!value || value.ok === false) return;
+    const key = normalizeSymbolKey(value.symbol);
+    if (!key || seen.has(key)) return;
     seen.add(key);
     const pct = Number.isFinite(value.changePct) ? ` ${value.changePct > 0 ? '+' : ''}${value.changePct}%` : '';
-    row.push({text: `📊 ${sym}${pct}`, callback_data: `bbma:status:${sym}`});
-  }
+    row.push({text: `📊 ${value.symbol}${pct}`, callback_data: `bbma:status:${value.symbol}`});
+  };
+  // 1) pinned symbols first (XAUUSD, BTCUSD)
+  for (const p of pinList) add(byKey.get(p));
+  // 2) fill remaining slots from board order
+  for (const value of Object.values(rows ?? {})) add(value);
   return row;
 }
 
@@ -63,7 +73,7 @@ export function dashboardCallbackData() {
 }
 
 /** Inline keyboard for a status/dashboard card; [] when the board is empty. */
-export function buildBbmaKeyboard({rows = {}, primarySymbol = 'XAUUSD', dashboardUrl = DASHBOARD_DEFAULT} = {}) {
-  const row = buildDashboardRow({rows, primarySymbol, dashboardUrl});
+export function buildBbmaKeyboard({rows = {}, pinned = null, dashboardUrl = DASHBOARD_DEFAULT} = {}) {
+  const row = buildDashboardRow({rows, pinned, dashboardUrl});
   return row.length ? [row] : [];
 }

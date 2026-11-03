@@ -27,7 +27,7 @@ test('ignores non callback updates',async()=>{
  assert.deepEqual(await handleTelegramCallback({update:{message:{text:'hello'}}}),{ok:false,reason:'NOT_CALLBACK_QUERY'});
 });
 
-const boardRows={'XAU/USD':{symbol:'XAU/USD',ok:true,last:3875.42,changePct:-0.21},'EUR/USD':{symbol:'EUR/USD',ok:true,last:1.17,changePct:0.04},'GBP/USD':{symbol:'GBP/USD',ok:true,last:1.36,changePct:0.09},'USD/JPY':{symbol:'USD/JPY',ok:true,last:146.2,changePct:-0.03}};
+const boardRows={'XAU/USD':{symbol:'XAU/USD',ok:true,last:3875.42,changePct:-0.21},'BTC/USD':{symbol:'BTC/USD',ok:true,last:97450,changePct:1.24},'EUR/USD':{symbol:'EUR/USD',ok:true,last:1.17,changePct:0.04},'GBP/USD':{symbol:'GBP/USD',ok:true,last:1.36,changePct:0.09},'USD/JPY':{symbol:'USD/JPY',ok:true,last:146.2,changePct:-0.03}};
 const lookup=new Map(Object.entries(boardRows).map(([k,v])=>[k.toUpperCase().replace(/[^A-Z0-9]/g,''),v]));
 
 test('status for a non-observed board symbol returns PRICE_ONLY (no BBMA fabrication)',async()=>{
@@ -46,10 +46,10 @@ test('status card carries the dashboard + symbol keyboard row',async()=>{
  assert.ok(Array.isArray(kb)&&kb.length===1);
  const dash=kb[0].find(b=>b.text==='📈 BBMA Dashboard');
  assert.ok(dash); assert.match(dash.url,/^https:/);
- // XAU/USD is the primary symbol -> excluded; 3 symbol buttons follow (EUR/GBP/USD-JPY)
+ // pinned XAU/USD + BTC/USD first, then first board symbol (EUR/USD)
  assert.equal(kb[0].length,4);
  const data=kb[0].map(b=>b.callback_data??null);
- assert.deepEqual(data,[null,'bbma:status:EUR/USD','bbma:status:GBP/USD','bbma:status:USD/JPY']);
+ assert.deepEqual(data,[null,'bbma:status:XAU/USD','bbma:status:BTC/USD','bbma:status:EUR/USD']);
 });
 
 test('observed symbol id takes precedence over board price (XAU status = BBMA not price)',async()=>{

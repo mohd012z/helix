@@ -32,6 +32,8 @@ const ledgerPath=process.env.BBMA_OBSERVATION_LEDGER??path.join('data','bbma-sha
 const fallbackPath=path.join('data','bbma-telegram-validation.json');
 const boardFile=process.env.BBMA_BOARD_FILE??'xauusd-data.js';
 const dashboardUrl=process.env.BBMA_DASHBOARD_URL??'https://mohd012z.github.io/helix/';
+// Comma-separated pinned symbols shown first on the symbol row.
+const pinned=(process.env.BBMA_PINNED_SYMBOLS??'XAUUSD,BTCUSD').split(',').map(s=>s.trim()).filter(Boolean);
 const LIFECYCLE_REFRESH_MS=Math.max(15000,Number(process.env.LIFECYCLE_REFRESH_MS??300000));
 if(!token||!allowedChat){console.error('Telegram secrets are not configured');process.exit(2);}
 
@@ -94,6 +96,7 @@ try{
       getBoardSymbol:symbol=>boardLookup.get(String(symbol).toUpperCase().replace(/[^A-Z0-9]/g,''))??null,
       boardRows,
       dashboardUrl,
+      pinned,
       answerCallback,
       respond,
     }),

@@ -26,6 +26,9 @@ if [ -z "$ENV_FILE" ]; then
     if [ -f "$c" ]; then ENV_FILE="$c"; break; fi
   done
 fi
+# Optional box-local overrides (never committed): dashboard URL, pinned
+# symbols, etc. Loaded AFTER the main env file so it can override.
+BOX_ENV="${HELIX_BOX_ENV:-$REPO_ROOT/.env.box}"
 mkdir -p "$RUN_DIR"
 LOCK="$RUN_DIR/poller.lock"
 LOG="$RUN_DIR/poller.log"
@@ -37,7 +40,7 @@ if [ -f "$LOCK" ]; then
   fi
 fi
 setsid bash -c "
-  set -a; [ -n '$ENV_FILE' ] && . '$ENV_FILE'; set +a;
+  set -a; [ -n '$ENV_FILE' ] && . '$ENV_FILE'; [ -f '$BOX_ENV' ] && . '$BOX_ENV'; set +a;
   echo \$\$ > '$LOCK';
   echo \"\$(date -u +%FT%TZ) poller start pid=\$\$ (detached)\" >> '$LOG';
   cd '$REPO_ROOT' || exit 1;

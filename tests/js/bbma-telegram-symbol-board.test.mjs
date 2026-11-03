@@ -22,43 +22,56 @@ test('findObservationBySymbol resolves by normalized key, null on miss', () => {
   assert.equal(findObservationBySymbol(null, 'XAUUSD'), null);
 });
 
-test('buildDashboardRow: dashboard first, then up to 3 ok symbols, primary excluded from dupes', () => {
+test('buildDashboardRow: dashboard first, then pinned XAUUSD+BTCUSD, remainder from board order', () => {
   const rows = {
-    'XAU/USD': {symbol: 'XAU/USD', ok: true, changePct: 0.5},
     'EUR/USD': {symbol: 'EUR/USD', ok: true, changePct: -0.2},
     'GBP/USD': {symbol: 'GBP/USD', ok: true, changePct: 1.1},
+    'XAU/USD': {symbol: 'XAU/USD', ok: true, changePct: 0.5},
+    'BTC/USD': {symbol: 'BTC/USD', ok: true, changePct: -1.3},
     'USD/JPY': {symbol: 'USD/JPY', ok: true, changePct: 0},
     'AUD/USD': {symbol: 'AUD/USD', ok: true, changePct: 0.9},
     'BROKEN': {symbol: 'BROKEN', ok: false},
   };
-  const row = buildDashboardRow({rows, primarySymbol: 'XAUUSD'});
+  const row = buildDashboardRow({rows});
   assert.equal(row[0].text, '📈 BBMA Dashboard');
   assert.match(row[0].url, /^https:/);
-  // dashboard + 3 symbols max
+  // dashboard + 3 symbols max (2 pinned + 1 from board order)
   assert.equal(row.length, 4);
-  // primary (XAU/USD) is excluded, so the 3 symbols are EUR, GBP, USD/JPY (board order)
   const syms = row.slice(1).map((b) => b.text);
-  assert.deepEqual(syms, ['📊 EUR/USD -0.2%', '📊 GBP/USD +1.1%', '📊 USD/JPY 0%']);
-  // every symbol button is a bbma:status:<symbol> callback matching its label
-  const expectedSyms = ['EUR/USD', 'GBP/USD', 'USD/JPY'];
-  assert.deepEqual(row.slice(1).map((b) => b.callback_data), expectedSyms.map((s) => `bbma:status:${s}`));
+  assert.deepEqual(syms, ['📊 XAU/USD +0.5%', '📊 BTC/USD -1.3%', '📊 EUR/USD -0.2%']);
+  const expected = ['XAU/USD', 'BTC/USD', 'EUR/USD'];
+  assert.deepEqual(row.slice(1).map((b) => b.callback_data), expected.map((s) => `bbma:status:${s}`));
 });
 
-test('buildDashboardRow: unavailable symbols skipped, board order preserved', () => {
+test('buildDashboardRow: pinned symbol missing from board is skipped, slot backfilled', () => {
   const rows = {
-    'A/B': {symbol: 'A/B', ok: false},
+    'EUR/USD': {symbol: 'EUR/USD', ok: true, changePct: 0.1},
+    'GBP/USD': {symbol: 'GBP/USD', ok: true, changePct: 0.2},
+  };
+  const row = buildDashboardRow({rows}); // BTCUSD pinned but absent
+  assert.deepEqual(row.map((b) => b.text), ['📈 BBMA Dashboard', '📊 EUR/USD +0.1%', '📊 GBP/USD +0.2%']);
+});
+
+test('buildDashboardRow: unavailable symbols skipped (even if pinned)', () => {
+  const rows = {
+    'XAU/USD': {symbol: 'XAU/USD', ok: false},
     'C/D': {symbol: 'C/D', ok: true},
   };
-  const row = buildDashboardRow({rows, primarySymbol: 'XAUUSD'});
+  const row = buildDashboardRow({rows});
   assert.deepEqual(row.map((b) => b.text), ['📈 BBMA Dashboard', '📊 C/D']);
 });
 
-test('buildBbmaKeyboard: empty board -> dashboard-only row; unknown primary still lists board symbols', () => {
+test('buildBbmaKeyboard: empty board -> dashboard-only row; custom pinned order honored', () => {
   assert.deepEqual(buildBbmaKeyboard({rows: {}}), [[{text: '📈 BBMA Dashboard', url: 'https://mohd012z.github.io/helix/'}]]);
-  const kb = buildBbmaKeyboard({rows: {'EUR/USD': {symbol: 'EUR/USD', ok: true, changePct: 0.1}}, primarySymbol: 'EURUSD'});
-  // primary EUR/USD excluded -> only dashboard + ... wait EUR is primary so excluded
-  assert.deepEqual(kb.map((r) => r.length), [1]);
-  assert.equal(kb[0][0].text, '📈 BBMA Dashboard');
+  const kb = buildBbmaKeyboard({
+    rows: {
+      'EUR/USD': {symbol: 'EUR/USD', ok: true, changePct: 0.1},
+      'BTC/USD': {symbol: 'BTC/USD', ok: true, changePct: 0.3},
+    },
+    pinned: ['BTCUSD'],
+  });
+  // only BTC pinned -> row = dashboard + BTC/USD (EUR not in the 3-slot fill? it is: 1+1)
+  assert.deepEqual(kb[0].map((b) => b.callback_data ?? b.text), ['📈 BBMA Dashboard', 'bbma:status:BTC/USD', 'bbma:status:EUR/USD']);
 });
 
 test('dashboardCallbackData is a stable bbma:dashboard token', () => {

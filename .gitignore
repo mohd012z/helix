@@ -9,3 +9,4 @@ __pycache__/
 /run-bbma/
 data/bbma-telegram-offset.json
 helix.env
+.env.box
