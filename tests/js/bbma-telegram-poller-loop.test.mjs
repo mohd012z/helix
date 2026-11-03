@@ -4,6 +4,7 @@ import {
   makeTelegramApi,
   makeOffsetStore,
   makeAnswerCallback,
+  makeRespond,
   runCallbackPollLoop,
 } from '../../macro/bbma/telegram-poller.mjs';
 
@@ -159,4 +160,47 @@ test('loop resumes from a persisted offset (no reprocess / no loss)', async () =
   const getUpdates = calls.find((c) => c.url.endsWith('/getUpdates'));
   assert.equal(getUpdates.body.offset, 10);
   assert.deepEqual(handled, ['bbma:evidence:alert-3']);
+});
+
+test('callback acknowledgment stops after one 409 retry rather than recursing forever', async () => {
+  let attempts = 0;
+  const answer = makeAnswerCallback({api: async () => {
+    attempts += 1;
+    const e = new Error('conflict');
+    e.status = 409;
+    throw e;
+  }});
+  assert.equal(await answer({callbackQueryId: 'q1', text: 'Loaded'}), false);
+  assert.equal(attempts, 2);
+});
+
+test('callback acknowledgment sends only supported Bot API fields', async () => {
+  let payload;
+  const answer = makeAnswerCallback({api: async (method, body) => {
+    assert.equal(method, 'answerCallbackQuery');
+    payload = body;
+    return true;
+  }});
+  assert.equal(await answer({callbackQueryId: 'q1', text: 'Loaded'}), true);
+  assert.deepEqual(payload, {callback_query_id: 'q1', text: 'Loaded', show_alert: false});
+});
+
+test('sendMessage wraps keyboard rows in Telegram inline_keyboard object', async () => {
+  let payload;
+  const respond = makeRespond({api: async (method, body) => {
+    assert.equal(method, 'sendMessage');
+    payload = body;
+    return {message_id: 11};
+  }});
+  const keyboard = [[{text: 'Status', callback_data: 'bbma:status:XAUUSD'}]];
+  await respond({chatId: 123, text: 'Status', parse_mode: 'HTML', reply_markup: keyboard});
+  assert.deepEqual(payload.reply_markup, {inline_keyboard: keyboard});
+  assert.equal(payload.chat_id, 123);
+});
+
+test('sendMessage without keyboard does not add reply_markup', async () => {
+  let payload;
+  await makeRespond({api: async (_method, body) => {payload = body; return {message_id: 12};}})
+    ({chatId: 123, text: 'No keyboard'});
+  assert.equal(Object.hasOwn(payload, 'reply_markup'), false);
 });
