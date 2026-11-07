@@ -25,7 +25,7 @@ import {adaptShadowObservationForTelegram} from '../macro/bbma/telegram-observat
 import {buildTelegramObservationHistory} from '../macro/bbma/telegram-history.mjs';
 import {buildSymbolLookup} from '../macro/bbma/telegram-symbol-board.mjs';
 import {loadIfxMenuData} from '../macro/bbma/ifx-news-source.mjs';
-import {renderIfxMainMenu} from '../macro/bbma/ifx-menu-view.mjs';
+import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelMenuCard, renderChannelRecheck} from '../macro/bbma/ifx-menu-view.mjs';
 
 const token=process.env.TELEGRAM_BOT_TOKEN;
 const allowedChat=String(process.env.TELEGRAM_CHAT_ID ?? '');
@@ -34,6 +34,12 @@ const ledgerPath=process.env.BBMA_OBSERVATION_LEDGER??path.join('data','bbma-sha
 const fallbackPath=path.join('data','bbma-telegram-validation.json');
 const boardFile=process.env.BBMA_BOARD_FILE??'xauusd-data.js';
 const dashboardUrl=process.env.BBMA_DASHBOARD_URL??'https://mohd012z.github.io/helix/';
+// The "ifxhelper2" Telegram CHANNEL (broadcast). The bot is an administrator
+// there; inline CALLBACK buttons don't render on it (no linked chat), so the
+// channel menu uses /start URL deep-links that land in the DM and trigger a
+// fresh recheck + repost here. IFX_CHANNEL_ID defaults to the channel handle.
+const channelChatId=process.env.IFX_CHANNEL_ID??'@ifxhelper2';
+const botUsername=process.env.IFX_BOT_USERNAME??'news_ifxhelperbot';
 // Comma-separated pinned symbols shown first on the symbol row.
 const pinned=(process.env.BBMA_PINNED_SYMBOLS??'XAUUSD,BTCUSD').split(',').map(s=>s.trim()).filter(Boolean);
 const LIFECYCLE_REFRESH_MS=Math.max(15000,Number(process.env.LIFECYCLE_REFRESH_MS??300000));
@@ -42,6 +48,18 @@ if(!token||!allowedChat){console.error('Telegram secrets are not configured');pr
 const log=(...a)=>console.log(...a);
 const api=makeTelegramApi({fetchFn:fetch,token,log});
 const offsetStore=makeOffsetStore({fs,path,filePath:offsetFile,log});
+
+// Send a rendered view to an arbitrary chat (the channel) using the same API
+// client. Normalizes reply_markup: an array (DM view convention) is wrapped in
+// {inline_keyboard}; an object is used as-is (channel view convention).
+async function sendToChat(chatId, view){
+  const payload={chat_id:chatId,text:view.text,parse_mode:view.parse_mode};
+  const rb=view.reply_markup;
+  if(Array.isArray(rb)&&rb.length) payload.reply_markup={inline_keyboard:rb};
+  else if(rb&&typeof rb==='object') payload.reply_markup=rb;
+  if(view.disable_web_page_preview) payload.disable_web_page_preview=true;
+  return api('sendMessage',payload);
+}
 
 // The desk board (16 symbols, xauusd-data.js `board.symbols`) feeds the
 // symbol-selection row. It's a generated artifact — parse defensively and
@@ -88,11 +106,47 @@ const onCycle=async()=>{
 // Menu entry: /menu /start /help and the section aliases. Any other text is
 // answered with a menu pointer (never silently dropped), so the bot always acks.
 const MENU_TRIGGERS=new Set(['/menu','/start','/help','menu','m','home','main','news event','bbma','news update','analysis']);
-async function handleMenuMessage({chatId,text,replyMarkup},{respond}){
+const CHANNEL_RECHECK=new Set(['weekly','upcoming']); // recheck + repost to @ifxhelper2
+// "home" from a channel button: just re-post the channel menu card (no data reload needed).
+async function handleMenuMessage({chatId,text},{respond}){
   const t=String(text??'').trim();
-  const isMenuTrigger=MENU_TRIGGERS.has(t.toLowerCase());
+  const payload=parseIfxMenuPayload(t);
+
+  // 1) Channel deep-link rechecks (/start ifx:menu:weekly | ifx:menu:upcoming):
+  //    force a FRESH data reload, render the channel report, repost to the
+  //    channel, and confirm in the DM. This is the "recheck & update" action.
+  if(payload&&CHANNEL_RECHECK.has(payload)){
+    try{
+      const fresh=await loadIfxMenuData({});
+      const view=renderChannelRecheck(payload,fresh,{now:fresh.now,botUsername,dashboardUrl});
+      const sent=await sendToChat(channelChatId,view);
+      const myt=new Date(fresh.now+8*3600*1000).toISOString().slice(11,16);
+      const label=payload==='upcoming'?'🔭 upcoming events':'📰 weekly news';
+      await respond({chatId,text:`✅ Rechecked ${label} and reposted to the channel (${myt} MYT).\nChannel post id: ${sent?.message_id??'—'}`,parse_mode:'HTML'});
+      return Object.freeze({ok:true,action:'ifx-channel-recheck',section:payload,channelMessageId:sent?.message_id??null});
+    }catch(e){
+      await respond({chatId,text:`⚠️ Recheck failed: ${String(e?.message??e)} — will retry on the next tap.`,parse_mode:'HTML'});
+      return Object.freeze({ok:false,action:'ifx-channel-recheck',section:payload,error:String(e?.message??e)});
+    }
+  }
+
+  // 2) "home" from a channel button: re-post the channel menu card to the channel.
+  if(payload==='home'){
+    try{
+      const card=renderChannelMenuCard({botUsername,dashboardUrl});
+      const sent=await sendToChat(channelChatId,card);
+      await respond({chatId,text:`✅ Reposted the channel menu card (id ${sent?.message_id??'—'}). Tap a button to recheck.`,parse_mode:'HTML'});
+      return Object.freeze({ok:true,action:'ifx-channel-card',channelMessageId:sent?.message_id??null});
+    }catch(e){
+      await respond({chatId,text:`⚠️ Could not post the channel card: ${String(e?.message??e)}`,parse_mode:'HTML'});
+      return Object.freeze({ok:false,action:'ifx-channel-card',error:String(e?.message??e)});
+    }
+  }
+
+  // 3) Plain menu triggers (and the other section aliases) -> the DM keyboard.
+  const isMenuTrigger=MENU_TRIGGERS.has(t.toLowerCase())||payload!=null;
   const view=isMenuTrigger?renderIfxMainMenu({boardRows,dashboardUrl,pinned})
-    :{text:`📡 Send /menu for the IFX menu (News Event · BBMA · News Update · Analysis).`,parse_mode:'HTML'};
+    :{text:`📡 Send /menu for the IFX menu (News Event · BBMA · News Update · Analysis).\nChannel recheck: tap a button on the @ifxhelper2 menu card.`,parse_mode:'HTML'};
   await respond({chatId,...view});
   return Object.freeze({ok:true,action:'ifx-menu-message',triggered:isMenuTrigger});
 }

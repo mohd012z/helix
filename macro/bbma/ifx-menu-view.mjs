@@ -169,14 +169,104 @@ export function renderIfxAnalysisView(data, { symbol = 'XAUUSD' } = {}) {
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
 }
 
+/* Parse a /start deep-link or bare payload into a menu action, or null.
+ * Channel buttons are URL deep-links (https://t.me/<bot>/start/ifx:menu:weekly),
+ * which Telegram delivers to the DM as the message "/start ifx:menu:weekly". */
+export function parseIfxMenuPayload(text) {
+  const t = String(text ?? '').trim();
+  const m = /ifx:menu:([a-z0-9-]+)/i.exec(t);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/* A small URL-button footer that renders on a CHANNEL (URL buttons work;
+ * callback buttons do not, since @ifxhelper2 has no linked chat). Lets a
+ * channel post re-trigger the recheck without opening the DM. */
+export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot' } = {}) {
+  const base = `https://t.me/${botUsername}/start/`;
+  return [
+    [
+      { text: '📰 Recheck Weekly News', url: base + 'ifx:menu:weekly' },
+      { text: '🔭 Recheck Upcoming', url: base + 'ifx:menu:upcoming' },
+    ],
+    [{ text: '📊 Open Full IFX Menu (DM)', url: base + 'ifx:menu:home' }],
+  ];
+}
+
+/* The channel menu card posted to @ifxhelper2 (Anam's "add menu on ifxhelper2"). */
+export function renderChannelMenuCard({ botUsername = 'news_ifxhelperbot', dashboardUrl = null } = {}) {
+  const lines = [
+    '📡 <b>IFX CHANNEL MENU</b>',
+    'Tap a button to <b>recheck the live feed</b> and repost this week’s news / upcoming events right here on the channel.',
+    '',
+    '📰 Weekly News · 🔭 Upcoming Events · 📊 Dashboard',
+    dashboardUrl ? `\n<code>${esc(dashboardUrl)}</code>` : '',
+    '',
+    'Research context only — not a direction call.',
+  ].filter(Boolean);
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername }) });
+}
+
+/* A freshly-rechecked channel report. `action` is 'weekly' or 'upcoming'.
+ * Accepts the wrapped loadIfxMenuData() bundle (poller path) or the raw bundle;
+ * unwraps once. Renders from the (just reloaded) data so the channel shows
+ * CURRENT news — the "recheck & update" Anam asked for. */
+export function renderChannelRecheck(action, data, { now = Date.now(), botUsername = 'news_ifxhelperbot', dashboardUrl = null } = {}) {
+  const d = (data && data.newsAuto && data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
+  const t = d?.now ?? now;
+  const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
+  if (action === 'upcoming') {
+    const rows = selectUpcomingHighImpact(d?.newsAuto, { now: t, limit: 10 });
+    const lines = [`🔭 <b>UPCOMING EVENTS — rechecked ${myt} MYT</b>`, ''];
+    if (!rows.length) {
+      lines.push('No upcoming high-impact forex events in the current-week window (quiet/weekend).');
+    } else {
+      rows.forEach((r) => {
+        const tag = `[${esc(r.currency)}]`;
+        lines.push(`🔴 <b>${esc(r.event)}</b> ${tag}`);
+        lines.push(`   🕒 ${esc(r.timeMyt)} MYT — ${esc(r.countdown)}`);
+        const meta = [];
+        if (r.forecast) meta.push(`forecast ${esc(r.forecast)}`);
+        if (r.previous) meta.push(`prev ${esc(r.previous)}`);
+        if (r.focusTf) meta.push(`focus ${esc(r.focusTf)}`);
+        if (meta.length) lines.push(`   ${meta.join(' · ')}`);
+        lines.push('');
+      });
+      lines.push('Times in MYT (UTC+8) · ForexFactory this-week feed.');
+    }
+    lines.push('', 'Research context only — not a direction call.');
+    return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername }) });
+  }
+  // default: weekly news
+  const items = selectLatestNews(data.newsAuto, { now, limit: 10 });
+  const lines = [`📰 <b>WEEKLY NEWS — rechecked ${myt} MYT</b>`, ''];
+  if (!items.length) {
+    lines.push('No classified news headlines loaded yet (feed may be empty).');
+  } else {
+    items.forEach((n) => {
+      const sig = n.signal && n.signal !== 'NEUTRAL' ? n.signal : 'NEUTRAL';
+      lines.push(`${SIGNAL_EMOJI[sig] ?? '⚪'} <b>[${esc(sig)}]</b> ${esc(n.title)}`);
+      const meta = [];
+      if (n.impact) meta.push(`impact ${esc(n.impact)}`);
+      if (n.source) meta.push(esc(n.source));
+      if (n.url) lines.push(`   <a href="${esc(n.url)}">source</a>`);
+      if (meta.length) lines.push(`   ${meta.join(' · ')}`);
+    });
+    lines.push('', 'Latest classified headlines, deduped (non-NEUTRAL first).');
+  }
+  lines.push('', 'Research context only — not a direction call.');
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername }) });
+}
+
 export function renderIfxMenuView(action, data, { boardRows = null, dashboardUrl = null, pinned = null } = {}) {
   // Accept either the raw loaded bundle ({now, newsAuto, atr, atrMtf, macro}) or the
   // wrapped loadIfxMenuData() output ({...: {ok, data}}) — normalize once here.
   const d = data && (data.newsAuto == null || data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
   switch (action) {
-    case 'news-event': return renderIfxNewsEventView(d);
+    case 'news-event':
+    case 'upcoming': return renderIfxNewsEventView(d);
     case 'bbma': return renderIfxBbmaView(d, { boardRows, dashboardUrl, pinned });
-    case 'news-update': return renderIfxNewsUpdateView(d);
+    case 'news-update':
+    case 'weekly': return renderIfxNewsUpdateView(d);
     case 'analysis-xau': return renderIfxAnalysisView(d, { symbol: 'XAUUSD' });
     case 'analysis-btc': return renderIfxAnalysisView(d, { symbol: 'BTCUSD' });
     default: return Object.freeze({ text: '⚠️ Unknown IFX menu section.', parse_mode: 'HTML' });

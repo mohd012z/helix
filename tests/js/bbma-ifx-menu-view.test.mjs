@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   renderIfxMainMenu, renderIfxNewsEventView, renderIfxBbmaView,
   renderIfxNewsUpdateView, renderIfxAnalysisView, renderIfxMenuView,
-  ifxMenuCallbackData,
+  ifxMenuCallbackData, parseIfxMenuPayload, renderChannelMenuCard,
+  renderChannelRecheck, channelMenuKeyboard,
 } from '../../macro/bbma/ifx-menu-view.mjs';
 
 const NOW = Date.parse('2026-11-06T00:00:00Z'); // 08:00 MYT; NFP (13:30 UTC) is upcoming
@@ -99,4 +100,55 @@ test('renderIfxMenuView accepts the wrapped loadIfxMenuData() bundle (poller pat
   const partial = { now: NOW, newsAuto: { ok: false }, atr: { ok: false }, atrMtf: { ok: false }, macro: { ok: false } };
   assert.match(renderIfxMenuView('news-event', partial).text, /No upcoming high-impact/);
   assert.match(renderIfxMenuView('analysis-xau', partial).text, /not available/);
+});
+
+test('parseIfxMenuPayload extracts the action from /start deep-links and bare payloads', () => {
+  assert.equal(parseIfxMenuPayload('/start ifx:menu:weekly'), 'weekly');
+  assert.equal(parseIfxMenuPayload('/start ifx:menu:UPCOMING'), 'upcoming');
+  assert.equal(parseIfxMenuPayload('ifx:menu:home'), 'home');
+  assert.equal(parseIfxMenuPayload('/start'), null);
+  assert.equal(parseIfxMenuPayload('/menu'), null);
+  assert.equal(parseIfxMenuPayload(''), null);
+  assert.equal(parseIfxMenuPayload(null), null);
+});
+
+test('channel menu card carries /start URL buttons that render on a channel', () => {
+  const card = renderChannelMenuCard({ dashboardUrl: 'https://gentle-violet.example/' });
+  assert.match(card.text, /IFX CHANNEL MENU/);
+  const btns = card.reply_markup.flat();
+  // Every channel button must be a URL button (no callback_data — channels can't fire callbacks).
+  assert.ok(btns.length >= 3);
+  for (const b of btns) {
+    assert.match(b.url, /^https:\/\/t\.me\/news_ifxhelperbot\/start\//);
+    assert.equal(b.callback_data, undefined, 'channel buttons must not use callback_data');
+  }
+  const urls = btns.map((b) => b.url);
+  assert.ok(urls.some((u) => u.endsWith('ifx:menu:weekly')));
+  assert.ok(urls.some((u) => u.endsWith('ifx:menu:upcoming')));
+  assert.ok(urls.some((u) => u.endsWith('ifx:menu:home')));
+});
+
+test('channel recheck (weekly) lists fresh headlines with a recheck timestamp + URL footer', () => {
+  // renderChannelRecheck expects the bundle shape {newsAuto, now}.
+  const v = renderChannelRecheck('weekly', { newsAuto: DATA.newsAuto.data, now: NOW }, { now: NOW });
+  assert.match(v.text, /WEEKLY NEWS — rechecked/);
+  assert.match(v.text, /Fed flags data-dependence/);
+  assert.match(v.text, /HAWKISH/);
+  assert.ok(v.reply_markup, 'channel recheck must carry the URL-button footer for re-tapping');
+  assert.equal(v.disable_web_page_preview, true);
+});
+
+test('channel recheck (upcoming) lists the upcoming high-impact event with MYT time', () => {
+  const v = renderChannelRecheck('upcoming', { newsAuto: DATA.newsAuto.data, now: NOW }, { now: NOW });
+  assert.match(v.text, /UPCOMING EVENTS — rechecked/);
+  assert.match(v.text, /Non-Farm Employment Change/);
+  assert.match(v.text, /21:30/);
+  assert.match(v.text, /in 13h/);
+  assert.ok(v.reply_markup);
+});
+
+test('channel recheck fails closed when the feed is empty (no fabrication)', () => {
+  const empty = { newsAuto: { incoming: [], byTab: {} }, now: NOW };
+  assert.match(renderChannelRecheck('weekly', empty, { now: NOW }).text, /No classified news/);
+  assert.match(renderChannelRecheck('upcoming', empty, { now: NOW }).text, /No upcoming high-impact/);
 });
