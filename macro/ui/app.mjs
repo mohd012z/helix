@@ -150,11 +150,82 @@ function renderSnapshot(data) {
   const xau = data.instruments['XAU/USD']; $('#xau-price').textContent = xau.price == null ? '—' : `$${fmt(xau.price)}`;
   $('#xau-change').textContent = xau.change == null || xau.changePct == null ? 'Daily verified snapshot' : `${xau.change >= 0 ? '+' : ''}${fmt(xau.change)} • ${xau.changePct >= 0 ? '+' : ''}${fmt(xau.changePct)}% • ${xau.dayRange ?? '—'}`;
   $('#verified-badge').textContent = data.verified ? 'VERIFIED SNAPSHOT' : 'SNAPSHOT';
+  renderHeroExtras(data); renderMacroPanel(data); renderPivotTable(data);
   const list = $('#source-list'); list.innerHTML = '';
   const entries = Object.values(data.sourceStatus ?? {});
   if (entries.length) entries.forEach(src => { const item=document.createElement('div'); item.className='source-item'; item.innerHTML='<strong></strong><span></span>'; item.querySelector('strong').textContent=src.label ?? 'Source'; item.querySelector('span').textContent=src.ok?'OK':'UNAVAILABLE'; list.appendChild(item); });
   else if (data.sources.length) data.sources.forEach(source => { const item=document.createElement('div'); item.className='source-item'; item.textContent=source; list.appendChild(item); });
   else list.innerHTML='<div class="empty-state">No source metadata in this snapshot.</div>';
+}
+
+/* Compact hero extras: sentiment read, next calendar event, latest news —
+ * real snapshot fields, honest fallbacks when a field is absent. */
+export function renderHeroExtras(data) {
+  const sent = data.sentiment ?? null;
+  const sentLabel = $('#sentiment-label'), sentMeta = $('#sentiment-meta');
+  if (sent && (sent.bias || sent.goldTone)) {
+    sentLabel.textContent = `${sent.goldTone ?? '—'} • ${sent.bias ?? '—'}`;
+    const score = Number(sent.score);
+    sentMeta.textContent = `${Number.isFinite(score) ? (score >= 0 ? '+' : '') + (score * 100).toFixed(1) : '—'} pressure • confidence ${sent.confidence ?? '—'}%`;
+  } else { sentLabel.textContent = '—'; sentMeta.textContent = 'No sentiment model in this snapshot.'; }
+  const events = Array.isArray(data.events) ? data.events : [];
+  const nextEvent = $('#next-event'), nextEventMeta = $('#next-event-meta');
+  if (events.length) { const e = events[0] ?? null; nextEvent.textContent = e?.event ?? e?.title ?? '—'; nextEventMeta.textContent = [e?.time, e?.currency].filter(Boolean).join(' • '); }
+  else { nextEvent.textContent = 'No upcoming event in the snapshot'; nextEventMeta.textContent = 'Calendar is empty for the current window.'; }
+  const news = Array.isArray(data.news) ? data.news : [];
+  const newsTitle = $('#latest-news-title'), newsMeta = $('#latest-news-meta');
+  if (news.length) { const n = news[0] ?? {}; newsTitle.textContent = n.title ?? '—'; newsMeta.textContent = n.time ?? n.summary ?? ''; }
+  else { newsTitle.textContent = 'No sourced news in the snapshot'; newsMeta.textContent = ''; }
+}
+
+/* Macro reference (DXY / US 10Y / Brent) straight from the snapshot — the
+ * page previously never showed these even though the data was there. */
+export function renderMacroPanel(data) {
+  const host = $('#macro-panel'); if (!host) return;
+  const rows = Array.isArray(data.macro) ? data.macro : [];
+  if (!rows.length) { host.className = 'empty-state'; host.textContent = 'No macro data in the current snapshot.'; return; }
+  host.className = 'mini-table';
+  const head = document.createElement('div');
+  head.innerHTML = '<span>Instrument</span><span>Value</span>';
+  host.appendChild(head);
+  rows.forEach(m => {
+    const row = document.createElement('div');
+    const label = document.createElement('strong'); label.textContent = m.label ?? '—';
+    const value = document.createElement('span');
+    const delta = (m.delta && m.delta !== '—') ? ` ${m.delta}` : '';
+    value.textContent = `${m.value ?? '—'}${delta}`;
+    if (m.tone === 'good') value.style.color = 'var(--up, #3fb96b)';
+    else if (m.tone === 'bad') value.style.color = 'var(--down, #e5604f)';
+    row.append(label, value); host.appendChild(row);
+  });
+}
+
+/* Classic pivot levels (previous daily OHLC + 20-day extreme) as a compact
+ * R4..S4 table around the last close — surfaces data the page previously hid. */
+export function renderPivotTable(data) {
+  const host = $('#pivot-table'); if (!host) return;
+  const lv = data.levels ?? null;
+  const res = Array.isArray(lv?.resistance) ? lv.resistance : [];
+  const sup = Array.isArray(lv?.support) ? lv.support : [];
+  if (!res.length && !sup.length) { host.className = 'empty-state'; host.textContent = 'No pivot levels in the current snapshot.'; return; }
+  const close = data.instruments?.['XAU/USD']?.price;
+  host.className = 'mini-table';
+  const head = document.createElement('div');
+  head.innerHTML = '<span>Level</span><span>Price</span>';
+  host.appendChild(head);
+  const rowFor = (label, value) => {
+    const row = document.createElement('div');
+    const l = document.createElement('strong'); l.textContent = label;
+    const v = document.createElement('span'); v.textContent = value == null ? '—' : fmt(value);
+    row.append(l, v); host.appendChild(row);
+  };
+  for (let i = res.length - 1; i >= 0; i -= 1) rowFor(`R${i + 1}`, res[i]);
+  if (Number.isFinite(Number(close))) rowFor('C (last close)', Number(close));
+  sup.forEach((v, i) => rowFor(`S${i + 1}`, v));
+  const note = document.createElement('div');
+  note.className = 'hero-meta'; note.style.marginTop = '.5rem';
+  note.textContent = lv?.note ?? 'Mechanical reference levels, not guarantees.';
+  host.appendChild(note);
 }
 
 function eventCandidates(event = {}) {
@@ -253,8 +324,12 @@ function showView(view) {
   const requested = view === 'DIGITAL' ? 'DIGITAL ASSETS' : view;
   const normalized = requested === 'MORE' ? 'BRIEF' : requested;
   $$('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.view === normalized));
-  $$('.bottom-nav button').forEach(button => button.classList.toggle('active', button.dataset.view === requested || (normalized === 'BRIEF' && button.dataset.view === 'MORE')));
-  $$('[data-view-section]').forEach(section => { const tags=section.dataset.viewSection.split(/\s+/); section.classList.toggle('hidden', normalized !== 'BRIEF' && !tags.includes(normalized)); });
+  $$('.bottom-nav button').forEach(button => button.classList.toggle('active', button.dataset.view === normalized));
+  // A section is visible when its data-view-section tag list contains the
+  // active view (SOURCES tags BRIEF too, so the audit sits at the foot of
+  // OVERVIEW). Views with no matching tag (legacy LATEST-ONLY panels) stay
+  // hidden — the board renders once, on OVERVIEW + BOARD.
+  $$('[data-view-section]').forEach(section => { const tags=section.dataset.viewSection.split(/\s+/); section.classList.toggle('hidden', !tags.includes(normalized)); });
 }
 function bindNavigation(){ $$('.nav-item, .bottom-nav button').forEach(button => button.addEventListener('click',()=>showView(button.dataset.view))); }
 function bindTheme(){ const key='macro-desk-theme'; let saved=null; try{saved=localStorage.getItem(key);}catch{} if(saved==='light'||saved==='dark') document.documentElement.dataset.theme=saved; $('#theme-toggle').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=next;try{localStorage.setItem(key,next);}catch{}}); }
