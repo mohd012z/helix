@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   renderIfxMainMenu, renderIfxNewsEventView, renderIfxBbmaView,
   renderIfxNewsUpdateView, renderIfxAnalysisView, renderIfxMenuView,
-  renderIfxPivotsView,
+  renderIfxPivotsView, renderIfxPivotsChooser, renderIfxPivotCalcView,
   ifxMenuCallbackData, parseIfxMenuPayload, renderChannelMenuCard,
   renderChannelRecheck, renderChannelLiveView, channelMenuKeyboard,
 } from '../../macro/bbma/ifx-menu-view.mjs';
@@ -279,11 +279,72 @@ test('renderIfxPivotsView handles the wrapped loadIfxMenuData() bundle (poller p
   assert.match(v.text, /4,137\.92/); // R3 gold (page 1 compact)
 });
 
-test('parseIfxMenuPayload handles pivots pagination (ifx:menu:pivots:2)', () => {
+test('parseIfxMenuPayload handles pivots pagination + symbol flow', () => {
   assert.equal(parseIfxMenuPayload('ifx:menu:pivots:2'), 'pivots:2');
   assert.equal(parseIfxMenuPayload('/start ifx:menu:pivots:2'), 'pivots:2');
   assert.equal(parseIfxMenuPayload('ifx:menu:pivots'), 'pivots');
+  assert.equal(parseIfxMenuPayload('ifx:menu:pivots:sym'), 'pivots:sym');
+  assert.equal(parseIfxMenuPayload('/start ifx:menu:pivots:sym:XAUUSD'), 'pivots:sym:XAUUSD');
   assert.equal(parseIfxMenuPayload('ifx:menu:weekly'), 'weekly');
+});
+
+test('renderIfxPivotsChooser = one button per loaded symbol + nav (3 per row)', () => {
+  const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: DATA.atr.data, atrMtf: DATA.atrMtf.data, macro: DATA.macro.data,
+    pivots: {
+      method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+      symbols: {
+        XAUUSD: { ok: true, id: 'XAUUSD', label: 'XAU/USD', ticker: 'GC=F', decimals: 2, session: '2026-11-06', h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 4162.34, R3: 4137.92, R2: 4129.78, R1: 4121.64, S1: 4105.36, S2: 4097.22, S3: 4089.08, S4: 4064.66, closePos: 0.62 },
+        EURUSD: { ok: true, id: 'EURUSD', label: 'EUR/USD', ticker: 'EURUSD=X', decimals: 4, session: '2026-11-06', h: 1.1235, l: 1.1133, c: 1.1228, range: 0.0102, R4: 1.1284, R3: 1.1256, R2: 1.1247, R1: 1.1239, S1: 1.1218, S2: 1.1209, S3: 1.1201, S4: 1.1172, closePos: 0.31 },
+      },
+    } };
+  const v = renderIfxPivotsChooser(d);
+  assert.match(v.text, /CHOOSE A SYMBOL/);
+  const flat = v.reply_markup.inline_keyboard.flat();
+  const symBtns = flat.filter((b) => b.callback_data?.startsWith('ifx:menu:pivots:sym:'));
+  assert.equal(symBtns.length, 2, 'one button per loaded symbol');
+  assert.deepEqual(symBtns.map((b) => b.callback_data), ['ifx:menu:pivots:sym:XAUUSD', 'ifx:menu:pivots:sym:EURUSD']);
+  assert.ok(flat.some((b) => b.callback_data === 'ifx:menu:pivots'), 'back-to-overview');
+  assert.ok(flat.some((b) => b.callback_data === 'ifx:menu:home'), 'back-to-menu');
+});
+
+test('renderIfxPivotCalcView walks the full HLC→range→step→R4..S4 working (arithmetic shown)', () => {
+  const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: DATA.atr.data, atrMtf: DATA.atrMtf.data, macro: DATA.macro.data,
+    pivots: {
+      method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+      symbols: {
+        XAUUSD: { ok: true, id: 'XAUUSD', label: 'XAU/USD', ticker: 'GC=F', decimals: 2, session: '2026-11-06', h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 4162.34, R3: 4137.92, R2: 4129.78, R1: 4121.64, S1: 4105.36, S2: 4097.22, S3: 4089.08, S4: 4064.66, closePos: 0.62 },
+      },
+    } };
+  const v = renderIfxPivotCalcView(d, 'XAUUSD');
+  assert.match(v.text, /CAMARILLA — XAU\/USD/);
+  // 1 inputs
+  assert.match(v.text, /H \(high\)  = 4,155\.80/);
+  assert.match(v.text, /L \(low\)   = 4,067\.00/);
+  assert.match(v.text, /C \(close\) = 4,113\.50/);
+  // 2 range, 3 step, 4 offsets
+  assert.match(v.text, /4,155\.80 − 4,067\.00 = 88\.80/);
+  assert.match(v.text, /88\.80 × 1\.1 = 97\.68/);
+  assert.match(v.text, /step\/12 = 8\.14/);
+  assert.match(v.text, /step\/2 = 48\.84/);
+  // 5 resistances, 6 supports (full R4..S4 with the arithmetic)
+  assert.match(v.text, /R4 = 4,113\.50 \+ 48\.84  = 4,162\.34/);
+  assert.match(v.text, /R3 = 4,113\.50 \+ 24\.42  = 4,137\.92/);
+  assert.match(v.text, /R2 = 4,113\.50 \+ 16\.28  = 4,129\.78/);
+  assert.match(v.text, /R1 = 4,113\.50 \+ 8\.14 = 4,121\.64/);
+  assert.match(v.text, /S1 = 4,113\.50 − 8\.14 = 4,105\.36/);
+  assert.match(v.text, /S4 = 4,113\.50 − 48\.84  = 4,064\.66/);
+  assert.match(v.text, /closed 62% of range 🟢 bullish/);
+  // nav back to the chooser
+  assert.ok(v.reply_markup.inline_keyboard.flat().some((b) => b.callback_data === 'ifx:menu:pivots:sym'));
+  assert.ok(v.text.length <= 4096, `calc view must fit the cap (${v.text.length})`);
+});
+
+test('renderIfxPivotCalcView fails closed for an unknown/missing symbol', () => {
+  const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: DATA.atr.data, atrMtf: DATA.atrMtf.data, macro: DATA.macro.data, pivots: null };
+  const v = renderIfxPivotCalcView(d, 'XAUUSD');
+  assert.match(v.text, /No pivot data loaded for this symbol/);
+  const v2 = renderIfxPivotsChooser(d);
+  assert.match(v2.text, /No pivot data loaded yet/);
 });
 
 test('renderIfxPivotsView fails closed with no data (honest note, no fabricated ladder)', () => {

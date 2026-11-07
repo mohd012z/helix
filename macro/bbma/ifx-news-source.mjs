@@ -189,7 +189,7 @@ export function selectPivots(pivots, { limit = PIVOT_ORDER.length } = {}) {
   const out = [];
   for (const id of PIVOT_ORDER) {
     const s = symbols[id];
-    if (s?.ok) out.push(Object.freeze({ ...s }));
+    if (s?.ok) out.push(Object.freeze({ id, ...s }));
     if (out.length >= limit) break;
   }
   return Object.freeze({

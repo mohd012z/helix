@@ -12,15 +12,16 @@ export async function handleTelegramCallback({update,getObservation,getCurrentSt
   // independent of the BBMA observation router below.
   if(q.data===ifxMenuCallbackData(null)||q.data.startsWith('ifx:menu:')){
     const segs=q.data.split(':');
-    // ifx:menu:pivots:2 -> "pivots:2" (pagination); others stay the bare action.
+    // ifx:menu:pivots:2 -> "pivots:2" (full ladders page);
+    // ifx:menu:pivots:sym -> "pivots:sym" (chooser); ifx:menu:pivots:sym:XAUUSD -> "pivots:sym:XAUUSD" (calc view).
     let action=segs[2]??null;
     if(action==='pivots'&&segs[3]) action=`pivots:${segs[3]}`;
-    const baseAction=action?.split(':')[0]??null;
+    if(action==='pivots:sym'&&segs[4]) action=`pivots:sym:${segs[4]}`;
 
     // Linked-channel recheck (weekly/upcoming/pivots callback buttons on a
     // channel post): the bot EDITs the tapped channel post in place with fresh
     // output (zero browser, zero DM) via the injected hook.
-    if(onChannelCallback && (baseAction==='weekly'||baseAction==='upcoming'||baseAction==='pivots')
+    if(onChannelCallback && (action==='weekly'||action==='upcoming'||action==='pivots')
        && q.message?.chat?.type==='channel'){
       try{
         await answerCallback({callbackQueryId:q.id,text:'Loading…'});
