@@ -112,8 +112,13 @@ async function refreshLivePost(data, { linked = false } = {}){
     }
     log(`DIAG live_post=updated id=${livePostId} at=${view.text.split('\n')[0].replace(/<[^>]+>/g,'')}`);
   }catch(e){
-    // Post was deleted (or first send raced) -> recreate once.
+    // "Message is not modified" = the 5-min auto-refresh raced a tap that
+    // edited the post to identical content — treat as a successful no-op.
     const desc=`${e?.description??''} ${e?.message??''}`;
+    if(/message is not modified/i.test(desc)){
+      log(`DIAG live_post=not_modified (no-op, already current)`);
+      return;
+    }
     if(/message to edit not found/i.test(desc)){
       log('DIAG live_post=deleted, recreating');
       try{
@@ -169,7 +174,14 @@ async function onChannelCallback({action,chatId,messageId}){
   const fresh=await loadIfxMenuData({});
   if(!fresh.newsAuto?.ok) throw new Error('news feed not loaded yet');
   const view=renderChannelRecheck(action,fresh,{now:fresh.now,botUsername,dashboardUrl,linked:linkedState.linked});
-  await api('editMessageText',{chat_id:chatId,message_id:messageId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+  try{
+    await api('editMessageText',{chat_id:chatId,message_id:messageId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+  }catch(e){
+    const desc=`${e?.description??''} ${e?.message??''}`;
+    if(/message is not modified/i.test(desc)){
+      log(`DIAG channel_edit=not_modified (no-op, already current) section=${action}`);
+    } else { throw e; }
+  }
   return {channelMessageId:messageId};
 }
 

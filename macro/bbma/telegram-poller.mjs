@@ -30,7 +30,7 @@ export function makeTelegramApi({fetchFn = fetch, token, log = makeNoopLog()} = 
       e.status = r.status;
       e.telegramCode = j?.error_code ?? (r.status === 409 ? 409 : null);
       e.description = j?.description ?? '';
-      log(`api_error method=${method} status=${r.status}`);
+      log(`api_error method=${method} status=${r.status} desc=${e.description}`);
       throw e;
     }
     return j.result;
