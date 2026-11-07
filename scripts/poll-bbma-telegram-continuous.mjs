@@ -204,7 +204,7 @@ const onCycle=async()=>{
 // Menu entry: /menu /start /help and the section aliases. Any other text is
 // answered with a menu pointer (never silently dropped), so the bot always acks.
 const MENU_TRIGGERS=new Set(['/menu','/start','/help','menu','m','home','main','news event','bbma','news update','analysis']);
-const CHANNEL_RECHECK=new Set(['weekly','upcoming']); // recheck + repost to @ifxhelper2
+const CHANNEL_RECHECK=new Set(['weekly','upcoming','pivots']); // recheck + repost to @ifxhelper2
 // "home" from a channel button: just re-post the channel menu card (no data reload needed).
 async function handleMenuMessage({chatId,text},{respond}){
   const t=String(text??'').trim();
@@ -219,7 +219,7 @@ async function handleMenuMessage({chatId,text},{respond}){
       const view=renderChannelRecheck(payload,fresh,{now:fresh.now,botUsername,dashboardUrl,linked:linkedState.linked});
       const sent=await sendToChat(channelChatId,view);
       const myt=new Date(fresh.now+8*3600*1000).toISOString().slice(11,16);
-      const label=payload==='upcoming'?'🔭 upcoming events':'📰 weekly news';
+      const label = payload==='upcoming' ? '🔭 upcoming events' : payload==='pivots' ? '📐 Camarilla pivots' : '📰 weekly news';
       await respond({chatId,text:`✅ Rechecked ${label} and reposted to the channel (${myt} MYT).\nChannel post id: ${sent?.message_id??'—'}`,parse_mode:'HTML'});
       return Object.freeze({ok:true,action:'ifx-channel-recheck',section:payload,channelMessageId:sent?.message_id??null});
     }catch(e){

@@ -128,6 +128,7 @@ test('channel menu card carries /start URL buttons that render on a channel', ()
   // The recheck buttons open the LIVE report page (in-app browser) — no bot DM.
   assert.ok(urls.some((u) => u.startsWith('https://mohd012z.github.io/News_ifxhelper/report.html?tab=weekly')));
   assert.ok(urls.some((u) => u.startsWith('https://mohd012z.github.io/News_ifxhelper/report.html?tab=upcoming')));
+  assert.ok(urls.some((u) => u.startsWith('https://mohd012z.github.io/News_ifxhelper/report.html?tab=pivots')));
   // Only the full interactive menu (ATR/BBMA, no web page) still opens the bot DM.
   assert.ok(urls.some((u) => u.endsWith('ifx:menu:home')));
   assert.equal(btns.filter((b) => b.url.includes('/start/')).length, 1, 'exactly one DM deep-link (full menu)');
@@ -135,8 +136,8 @@ test('channel menu card carries /start URL buttons that render on a channel', ()
 
 test('channel keyboard (linked) emits callback buttons that edit the post in place', () => {
   const kb = channelMenuKeyboard({ linked: true }).flat();
-  assert.equal(kb.length, 3);
-  assert.deepEqual(kb.filter((b) => b.callback_data).map((b) => b.callback_data), ['ifx:menu:weekly', 'ifx:menu:upcoming']);
+  assert.equal(kb.length, 4);
+  assert.deepEqual(kb.filter((b) => b.callback_data).map((b) => b.callback_data), ['ifx:menu:weekly', 'ifx:menu:upcoming', 'ifx:menu:pivots']);
   assert.ok(kb.some((b) => b.url && b.url.endsWith('ifx:menu:home')), 'full menu stays a DM deep-link');
   assert.equal(kb.filter((b) => b.callback_data && b.url).length, 0, 'a button is either callback OR url');
 });
@@ -167,6 +168,19 @@ test('channel recheck (upcoming) lists the upcoming high-impact event with MYT t
   assert.ok(v.reply_markup);
 });
 
+test('channel recheck (pivots) shows the C/R3/S3 compact ladder + callback buttons when linked', () => {
+  const bundle = { newsAuto: DATA.newsAuto, pivots: { ok: true, data: {
+    method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+    symbols: { XAUUSD: { ok: true, label: 'XAU/USD', decimals: 2, h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 4162.34, R3: 4137.92, R2: 4129.78, R1: 4121.64, S1: 4105.36, S2: 4097.22, S3: 4089.08, S4: 4064.66, closePos: 0.55 } },
+  } }, now: NOW };
+  const v = renderChannelRecheck('pivots', bundle, { now: NOW, linked: true });
+  assert.match(v.text, /CAMARILLA PIVOTS — rechecked/);
+  assert.match(v.text, /2026-11-06/);
+  assert.match(v.text, /4,137.92/);  // R3 gold
+  assert.match(v.text, /4,089.08/);  // S3 gold
+  assert.ok(v.reply_markup.flat().some((b) => b.callback_data === 'ifx:menu:pivots'));
+});
+
 test('channel recheck fails closed when the feed is empty (no fabrication)', () => {
   const empty = { newsAuto: { incoming: [], byTab: {} }, now: NOW };
   assert.match(renderChannelRecheck('weekly', empty, { now: NOW }).text, /No classified news/);
@@ -184,7 +198,7 @@ test('pinned LIVE view: wrapped bundle, 3 top headlines + SELL badges + URL-butt
   assert.match(v.text, /Non-Farm Employment Change/);
   // The live post doubles as the menu: URL buttons only, no callback_data.
   const btns = v.reply_markup.flat();
-  assert.equal(btns.length, 3);
+  assert.equal(btns.length, 4);
   for (const b of btns) assert.ok(b.url && b.callback_data === undefined);
   assert.equal(v.disable_web_page_preview, true);
 });

@@ -237,7 +237,10 @@ export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportB
         { text: '📰 Weekly News', callback_data: 'ifx:menu:weekly' },
         { text: '🔭 Upcoming Events', callback_data: 'ifx:menu:upcoming' },
       ],
-      [{ text: '📊 Open Full IFX Menu (DM)', url: `https://t.me/${botUsername}/start/ifx:menu:home` }],
+      [
+        { text: '📐 Camarilla Pivots', callback_data: 'ifx:menu:pivots' },
+        { text: '📊 Full IFX Menu (DM)', url: `https://t.me/${botUsername}/start/ifx:menu:home` },
+      ],
     ];
   }
   const startBase = `https://t.me/${botUsername}/start/`;
@@ -246,7 +249,10 @@ export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportB
       { text: '📰 Weekly News', url: `${reportBase}?tab=weekly` },
       { text: '🔭 Upcoming Events', url: `${reportBase}?tab=upcoming` },
     ],
-    [{ text: '📊 Open Full IFX Menu (DM)', url: startBase + 'ifx:menu:home' }],
+    [
+      { text: '📐 Camarilla Pivots', url: `${reportBase}?tab=pivots` },
+      { text: '📊 Full IFX Menu (DM)', url: startBase + 'ifx:menu:home' },
+    ],
   ];
 }
 
@@ -268,14 +274,30 @@ export function renderChannelMenuCard({ botUsername = 'news_ifxhelperbot', dashb
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
 }
 
-/* A freshly-rechecked channel report. `action` is 'weekly' or 'upcoming'.
- * Accepts the wrapped loadIfxMenuData() bundle (poller path) or the raw bundle;
- * unwraps once. Renders from the (just reloaded) data so the channel shows
- * CURRENT news — the "recheck & update" Anam asked for. */
+/* A freshly-rechecked channel report. `action` is 'weekly', 'upcoming' or
+ * 'pivots'. Accepts the wrapped loadIfxMenuData() bundle (poller path) or the
+ * raw bundle; unwraps once. Renders from the (just reloaded) data so the
+ * channel shows CURRENT news — the "recheck & update" Anam asked for. */
 export function renderChannelRecheck(action, data, { now = Date.now(), botUsername = 'news_ifxhelperbot', dashboardUrl = null, linked = false } = {}) {
   const d = (data && data.newsAuto && data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
   const t = d?.now ?? now;
   const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
+  if (action === 'pivots') {
+    const sel = selectPivots(d?.pivots, { limit: 8 });
+    const lines = [`📐 <b>CAMARILLA PIVOTS — rechecked ${myt} MYT</b>`, ''];
+    if (!sel.okCount) {
+      lines.push('No pivot data loaded yet (previous-session OHLC unavailable).');
+    } else {
+      lines.push(`Prev session ${esc(sel.session ?? '—')} · levels from prior close`);
+      lines.push('<i>Symbol  C  R3  S3</i>', '');
+      sel.symbols.forEach((s) => {
+        lines.push(`<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)} · R3 ${fmtPx(s.R3, s.decimals)} · S3 ${fmtPx(s.S3, s.decimals)}`);
+      });
+      lines.push('', 'R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout (full ladder on the Pivots tab of the report page).');
+    }
+    lines.push('', 'Research context only — not a direction call.');
+    return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
+  }
   if (action === 'upcoming') {
     const rows = selectUpcomingHighImpact(d?.newsAuto, { now: t, limit: 10 });
     const lines = [`🔭 <b>UPCOMING EVENTS — rechecked ${myt} MYT</b>`, ''];
