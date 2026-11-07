@@ -131,6 +131,21 @@ test('channel menu card carries /start URL buttons that render on a channel', ()
   assert.equal(btns.filter((b) => b.url.includes('/start/')).length, 1, 'exactly one DM deep-link (full menu)');
 });
 
+test('channel keyboard (linked) emits callback buttons that edit the post in place', () => {
+  const kb = channelMenuKeyboard({ linked: true }).flat();
+  assert.equal(kb.length, 3);
+  assert.deepEqual(kb.filter((b) => b.callback_data).map((b) => b.callback_data), ['ifx:menu:weekly', 'ifx:menu:upcoming']);
+  assert.ok(kb.some((b) => b.url && b.url.endsWith('ifx:menu:home')), 'full menu stays a DM deep-link');
+  assert.equal(kb.filter((b) => b.callback_data && b.url).length, 0, 'a button is either callback OR url');
+});
+
+test('renderChannelRecheck (linked) carries callback buttons, not URLs', () => {
+  const v = renderChannelRecheck('weekly', { newsAuto: DATA.newsAuto.data, now: NOW }, { now: NOW, linked: true });
+  const btns = v.reply_markup.flat();
+  assert.ok(btns.some((b) => b.callback_data === 'ifx:menu:weekly'));
+  assert.ok(btns.some((b) => b.url && b.url.endsWith('ifx:menu:home')));
+});
+
 test('channel recheck (weekly) lists fresh headlines with a recheck timestamp + URL footer', () => {
   // renderChannelRecheck expects the bundle shape {newsAuto, now}.
   const v = renderChannelRecheck('weekly', { newsAuto: DATA.newsAuto.data, now: NOW }, { now: NOW });

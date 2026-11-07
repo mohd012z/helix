@@ -187,8 +187,22 @@ export const IFX_REPORT_BASE = 'https://mohd012z.github.io/News_ifxhelper/report
 /* A small URL-button keyboard that renders on a CHANNEL (URL buttons work;
  * callback buttons do not, since @ifxhelper2 has no linked chat). The two
  * recheck buttons open the live report page (in-app browser). The full
- * interactive menu (ATR/BBMA analysis has no web page) stays a /start DM. */
-export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportBase = IFX_REPORT_BASE } = {}) {
+ * interactive menu (ATR/BBMA analysis has no web page) stays a /start DM.
+ *
+ * ADAPTIVE: once the channel is linked to a discussion group the bot is a
+ * member of, callback buttons fire on channel posts too — `linked: true`
+ * emits real callback_data (tap -> bot edits the channel post in place, zero
+ * browser/DM). Until then the URL/DM fallbacks keep working. */
+export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportBase = IFX_REPORT_BASE, linked = false } = {}) {
+  if (linked) {
+    return [
+      [
+        { text: '📰 Weekly News', callback_data: 'ifx:menu:weekly' },
+        { text: '🔭 Upcoming Events', callback_data: 'ifx:menu:upcoming' },
+      ],
+      [{ text: '📊 Open Full IFX Menu (DM)', url: `https://t.me/${botUsername}/start/ifx:menu:home` }],
+    ];
+  }
   const startBase = `https://t.me/${botUsername}/start/`;
   return [
     [
@@ -200,24 +214,28 @@ export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportB
 }
 
 /* The channel menu card posted to @ifxhelper2 (Anam's "add menu on ifxhelper2"). */
-export function renderChannelMenuCard({ botUsername = 'news_ifxhelperbot', dashboardUrl = null } = {}) {
+export function renderChannelMenuCard({ botUsername = 'news_ifxhelperbot', dashboardUrl = null, linked = false } = {}) {
+  const hint = linked
+    ? 'Tap a button — the post <b>updates right there</b> with the fresh weekly news / upcoming events (no browser, no chat).'
+    : 'Tap a button — the <b>fresh weekly news / upcoming events</b> open right here in Telegram (in-app browser, auto-updates every minute).';
   const lines = [
     '📡 <b>IFX CHANNEL MENU</b>',
-    'Tap a button — the <b>fresh weekly news / upcoming events</b> open right here in Telegram (in-app browser, auto-updates every minute).',
+    hint,
     '',
-    '📰 Weekly News · 🔭 Upcoming Events · 📊 Full interactive menu (bot)',
+    linked ? '📰 Weekly News · 🔭 Upcoming Events · 📊 Full interactive menu (bot)'
+           : '📰 Weekly News · 🔭 Upcoming Events · 📊 Full interactive menu (bot)',
     dashboardUrl ? `\n<code>${esc(dashboardUrl)}</code>` : '',
     '',
     'Research context only — not a direction call.',
   ].filter(Boolean);
-  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername }) });
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
 }
 
 /* A freshly-rechecked channel report. `action` is 'weekly' or 'upcoming'.
  * Accepts the wrapped loadIfxMenuData() bundle (poller path) or the raw bundle;
  * unwraps once. Renders from the (just reloaded) data so the channel shows
  * CURRENT news — the "recheck & update" Anam asked for. */
-export function renderChannelRecheck(action, data, { now = Date.now(), botUsername = 'news_ifxhelperbot', dashboardUrl = null } = {}) {
+export function renderChannelRecheck(action, data, { now = Date.now(), botUsername = 'news_ifxhelperbot', dashboardUrl = null, linked = false } = {}) {
   const d = (data && data.newsAuto && data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
   const t = d?.now ?? now;
   const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
@@ -241,7 +259,7 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
       lines.push('Times in MYT (UTC+8) · ForexFactory this-week feed.');
     }
     lines.push('', 'Research context only — not a direction call.');
-    return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername }) });
+    return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
   }
   // default: weekly news
   const items = selectLatestNews(d?.newsAuto, { now: t, limit: 10 });
@@ -261,14 +279,14 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
     lines.push('', 'Latest classified headlines, deduped (non-NEUTRAL first).');
   }
   lines.push('', 'Research context only — not a direction call.');
-  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername }) });
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername, linked }) });
 }
 
 /* The pinned "LIVE" channel post content — the poller edits this in place
  * every ~5 min (onCycle) so the 9 subscribers always see fresh weekly news +
  * upcoming events WITHOUT tapping anything. Compact: 3 top headlines with
  * SELL/BUY bias + the next high-impact event, then the URL-button menu. */
-export function renderChannelLiveView(data, { now = Date.now(), botUsername = 'news_ifxhelperbot' } = {}) {
+export function renderChannelLiveView(data, { now = Date.now(), botUsername = 'news_ifxhelperbot', linked = false } = {}) {
   const d = (data && data.newsAuto && data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
   const t = d?.now ?? now;
   const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(11, 16);
@@ -285,7 +303,7 @@ export function renderChannelLiveView(data, { now = Date.now(), botUsername = 'n
   if (!rows.length) lines.push('All clear — no events in the current-week window.');
   else rows.forEach((r) => lines.push(`🔴 ${esc(r.event)} — ${esc(r.timeMyt)} MYT (${esc(r.countdown)})`));
   lines.push('', '📰 Full weekly · 🔭 Full upcoming · 📊 Interactive menu:');
-  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername }) });
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername, linked }) });
 }
 
 export function renderIfxMenuView(action, data, { boardRows = null, dashboardUrl = null, pinned = null } = {}) {
