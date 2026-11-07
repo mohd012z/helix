@@ -116,6 +116,7 @@ export async function runCallbackPollLoop({
   handleMessage = null,
   allowedUpdates = ['callback_query'],
   authorizedChat,
+  channelChatId = null,
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
   log = makeNoopLog(),
   onCycle = null,
@@ -200,13 +201,18 @@ export async function runCallbackPollLoop({
       const alertId = idParts.join(':');
       log(`callback_received action=${action ?? 'UNKNOWN'} alert_id=${alertId.slice(0, 64)}`);
 
+      // Authorized sources: the DM chat (always) plus the IFX channel (resolved
+      // to its numeric id at startup) whose posts carry the in-place callback
+      // buttons.
       const chat = String(q?.message?.chat?.id ?? '');
-      if (chat !== authorizedChat) {
+      const authorized = chat === authorizedChat
+        || (channelChatId != null && chat === String(channelChatId));
+      if (!authorized) {
         log('authorized=false');
         if (q?.id) await answerCallback({callbackQueryId: q.id, text: 'Unauthorized chat'});
         continue;
       }
-      log('authorized=true');
+      log(`authorized=true chat=${chat}`);
 
       try {
         await handleUpdate(u, {answerCallback, respond});
