@@ -179,8 +179,11 @@ export function selectGoldMtfAtr(atrMtf) {
 }
 
 /* Camarilla pivot symbols in display order. Only ok:true entries are returned;
- * a failed symbol is omitted (the view shows what loaded, fail-closed). */
-const PIVOT_ORDER = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'BTCUSD', 'ETHUSD', 'DXY'];
+ * a failed symbol is omitted (the view shows what loaded, fail-closed). The
+ * core 8 come first (full R4..S4 ladder in the DM), then crosses + EM extras
+ * (compact ladder). */
+const PIVOT_ORDER = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'BTCUSD', 'ETHUSD', 'DXY',
+  'USDMYR', 'NZDUSD', 'USDCAD', 'USDCHF', 'EURJPY', 'GBPJPY', 'EURGBP', 'AUDJPY', 'USDIDR', 'USDTHB'];
 export function selectPivots(pivots, { limit = PIVOT_ORDER.length } = {}) {
   const symbols = pivots?.symbols ?? {};
   const out = [];

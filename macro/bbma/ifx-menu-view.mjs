@@ -177,42 +177,61 @@ export function renderIfxAnalysisView(data, { symbol = 'XAUUSD' } = {}) {
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
 }
 
-/* 📐 Camarilla Pivots — per-symbol ladder (R4..R1 / close / S1..S4) from the
- * previous session's HLC. Fail-closed: shows what loaded; empty = honest note.
- * Keeps under Telegram's 4096-char message cap (max ~4 symbols, compact rows). */
-export function renderIfxPivotsView(data, { maxSymbols = 4 } = {}) {
+/* 📐 Camarilla Pivots — two pages (Telegram 4096-char message cap):
+ *   page 1: ALL loaded symbols, compact C/R3/S3 (core + crosses/EM extras)
+ *   page 2: the core 8 in full R4..R1 / C / S1..S4 ladders + session HLC
+ * + cross-page nav buttons. Fail-closed: shows what loaded; empty = note. */
+export const PIVOT_PAGE_SIZE = 8;
+export function renderIfxPivotsView(data, { page = 1 } = {}) {
   // Accept the wrapped loadIfxMenuData() bundle (poller path) or the raw bundle.
   const d = data && (data.newsAuto == null || data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
   const sel = selectPivots(d?.pivots);
   const myt = (iso) => (iso ? new Date((iso.endsWith('Z') ? iso : iso + 'Z')).toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', hour12: false, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' MYT' : '—');
   if (!sel.okCount) {
-    return Object.freeze({ text: '📐 <b>CAMARILLA PIVOTS</b>\n\nNo pivot data loaded yet (previous-session OHLC unavailable). It refreshes every 30 min via the ifx poller.\n\nR3/S3 = mean-reversion · R4/S4 = trend-day breakout.\nResearch context only — not a direction call.', parse_mode: 'HTML' });
+    return Object.freeze({ text: '📐 <b>CAMARILLA PIVOTS</b>\n\nNo pivot data loaded yet (previous-session OHLC unavailable). It refreshes every 30 min via the ifx poller.\n\nR3/S3 = mean-reversion · R4/S4 = trend-day breakout.\nResearch context only — not a direction call.', parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '⬅️ IFX Menu', callback_data: 'ifx:menu:home' }]] } });
   }
-  const shown = sel.symbols.slice(0, maxSymbols);
-  const lines = [`📐 <b>CAMARILLA PIVOTS</b> — ${esc(shown.length)}/${esc(sel.okCount)} shown`];
-  lines.push(`Prev session ${esc(sel.session ?? '—')} · gen ${esc(myt(sel.generatedAt))}`, '');
-  lines.push('<i>R4 R3 R2 R1 / C / S1 S2 S3 S4</i>', '');
-  for (const s of shown) {
-    lines.push(`▍<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)}  (H ${fmtPx(s.h, s.decimals)} · L ${fmtPx(s.l, s.decimals)} · range ${fmtPx(s.range, s.decimals)})`);
-    lines.push(`   R: ${fmtPx(s.R4, s.decimals)} ${fmtPx(s.R3, s.decimals)} ${fmtPx(s.R2, s.decimals)} ${fmtPx(s.R1, s.decimals)}`);
-    lines.push(`   S: ${fmtPx(s.S1, s.decimals)} ${fmtPx(s.S2, s.decimals)} ${fmtPx(s.S3, s.decimals)} ${fmtPx(s.S4, s.decimals)}`);
-    const pos = Math.round((s.closePos ?? 0) * 100);
-    lines.push(`   closed ${pos}% of range ${pos >= 60 ? '🟢 bullish' : pos <= 40 ? '🔴 bearish' : '⚪ mid'}`);
-    lines.push('');
+  const all = sel.symbols;
+  const core = all.slice(0, PIVOT_PAGE_SIZE);
+  const lines = [];
+  if (page === 1) {
+    lines.push(`📐 <b>CAMARILLA PIVOTS</b> — ${esc(all.length)} symbols`);
+    lines.push(`Prev session ${esc(sel.session ?? '—')} · gen ${esc(myt(sel.generatedAt))}`, '');
+    lines.push('<i>Symbol  C  R3  S3</i>', '');
+    for (const s of all) {
+      lines.push(`<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)} · R3 ${fmtPx(s.R3, s.decimals)} · S3 ${fmtPx(s.S3, s.decimals)}`);
+    }
+    lines.push('', 'R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout.');
+  } else {
+    lines.push(`📐 <b>CAMARILLA PIVOTS — full ladders</b> (core ${esc(core.length)})`);
+    lines.push(`Prev session ${esc(sel.session ?? '—')} · gen ${esc(myt(sel.generatedAt))}`, '');
+    lines.push('<i>R4 R3 R2 R1 / C / S1 S2 S3 S4</i>', '');
+    for (const s of core) {
+      lines.push(`▍<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)}  (H ${fmtPx(s.h, s.decimals)} · L ${fmtPx(s.l, s.decimals)} · range ${fmtPx(s.range, s.decimals)})`);
+      lines.push(`   R: ${fmtPx(s.R4, s.decimals)} ${fmtPx(s.R3, s.decimals)} ${fmtPx(s.R2, s.decimals)} ${fmtPx(s.R1, s.decimals)}`);
+      lines.push(`   S: ${fmtPx(s.S1, s.decimals)} ${fmtPx(s.S2, s.decimals)} ${fmtPx(s.S3, s.decimals)} ${fmtPx(s.S4, s.decimals)}`);
+      const pos = Math.round((s.closePos ?? 0) * 100);
+      lines.push(`   closed ${pos}% of range ${pos >= 60 ? '🟢 bullish' : pos <= 40 ? '🔴 bearish' : '⚪ mid'}`);
+      lines.push('');
+    }
   }
-  if (sel.okCount > shown.length) lines.push(`+ ${esc(sel.okCount - shown.length)} more symbol(s) — see the Pivots tab in the report page for all ${esc(sel.okCount)}.`);
-  lines.push('R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout.');
   lines.push('Research context only — not a direction call.');
-  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
+  const row = [];
+  if (page === 1) row.push({ text: '📏 Full Ladders (R4–S4)', callback_data: 'ifx:menu:pivots:2' });
+  else row.push({ text: '⬆️ All Symbols', callback_data: 'ifx:menu:pivots:1' });
+  row.push({ text: '⬅️ IFX Menu', callback_data: 'ifx:menu:home' });
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: { inline_keyboard: [row] } });
 }
 
 /* Parse a /start deep-link or bare payload into a menu action, or null.
  * Channel buttons are URL deep-links (https://t.me/<bot>/start/ifx:menu:weekly),
- * which Telegram delivers to the DM as the message "/start ifx:menu:weekly". */
+ * which Telegram delivers to the DM as the message "/start ifx:menu:weekly".
+ * Pivots pagination: ifx:menu:pivots:2 = page 2 (extras symbols). */
 export function parseIfxMenuPayload(text) {
   const t = String(text ?? '').trim();
-  const m = /ifx:menu:([a-z0-9-]+)/i.exec(t);
-  return m ? m[1].toLowerCase() : null;
+  const m = /ifx:menu:([a-z0-9-]+)(?::(\d+))?/i.exec(t);
+  if (!m) return null;
+  const action = m[1].toLowerCase();
+  return action === 'pivots' && m[2] ? `pivots:${m[2]}` : action;
 }
 
 /* Base URL of the live IFX report page (GitHub Pages, legacy build from main,
@@ -283,17 +302,17 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
   const t = d?.now ?? now;
   const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
   if (action === 'pivots') {
-    const sel = selectPivots(d?.pivots, { limit: 8 });
+    const sel = selectPivots(d?.pivots);
     const lines = [`📐 <b>CAMARILLA PIVOTS — rechecked ${myt} MYT</b>`, ''];
     if (!sel.okCount) {
       lines.push('No pivot data loaded yet (previous-session OHLC unavailable).');
     } else {
-      lines.push(`Prev session ${esc(sel.session ?? '—')} · levels from prior close`);
+      lines.push(`Prev session ${esc(sel.session ?? '—')} · ${esc(sel.okCount)} symbols · levels from prior close`);
       lines.push('<i>Symbol  C  R3  S3</i>', '');
       sel.symbols.forEach((s) => {
         lines.push(`<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)} · R3 ${fmtPx(s.R3, s.decimals)} · S3 ${fmtPx(s.S3, s.decimals)}`);
       });
-      lines.push('', 'R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout (full ladder on the Pivots tab of the report page).');
+      lines.push('', 'R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout (full R4–S4 ladders on the Pivots tab of the report page).');
     }
     lines.push('', 'Research context only — not a direction call.');
     return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
@@ -377,7 +396,8 @@ export function renderIfxMenuView(action, data, { boardRows = null, dashboardUrl
     case 'weekly': return renderIfxNewsUpdateView(d);
     case 'analysis-xau': return renderIfxAnalysisView(d, { symbol: 'XAUUSD' });
     case 'analysis-btc': return renderIfxAnalysisView(d, { symbol: 'BTCUSD' });
-    case 'pivots': return renderIfxPivotsView(d);
+    case 'pivots': return renderIfxPivotsView(d, { page: 1 });
+    case 'pivots:2': return renderIfxPivotsView(d, { page: 2 });
     default: return Object.freeze({ text: '⚠️ Unknown IFX menu section.', parse_mode: 'HTML' });
   }
 }
