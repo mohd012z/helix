@@ -238,10 +238,16 @@ async function handleMenuMessage({chatId,text},{respond}){
 }
 
 try{
+  // Resolve the channel handle to its numeric id (callback updates carry
+  // numeric chat ids; the DM authorizedChat is already numeric).
+  let channelId=null;
+  try{const cg=await api('getChat',{chat_id:channelChatId});channelId=cg?.id??null;log(`DIAG channel_id=${channelId} title=${cg?.title}`);}
+  catch(e){log(`DIAG channel_id=resolve_fail reason=${e.message}`);}
   await runCallbackPollLoop({
     api,
     offsetStore,
     authorizedChat:allowedChat,
+    channelChatId:channelId,
     log,
     onCycle,
     allowedUpdates:['callback_query','message'],
