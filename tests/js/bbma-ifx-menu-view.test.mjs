@@ -4,7 +4,7 @@ import {
   renderIfxMainMenu, renderIfxNewsEventView, renderIfxBbmaView,
   renderIfxNewsUpdateView, renderIfxAnalysisView, renderIfxMenuView,
   ifxMenuCallbackData, parseIfxMenuPayload, renderChannelMenuCard,
-  renderChannelRecheck, channelMenuKeyboard,
+  renderChannelRecheck, renderChannelLiveView, channelMenuKeyboard,
 } from '../../macro/bbma/ifx-menu-view.mjs';
 
 const NOW = Date.parse('2026-11-06T00:00:00Z'); // 08:00 MYT; NFP (13:30 UTC) is upcoming
@@ -154,4 +154,27 @@ test('channel recheck fails closed when the feed is empty (no fabrication)', () 
   const empty = { newsAuto: { incoming: [], byTab: {} }, now: NOW };
   assert.match(renderChannelRecheck('weekly', empty, { now: NOW }).text, /No classified news/);
   assert.match(renderChannelRecheck('upcoming', empty, { now: NOW }).text, /No upcoming high-impact/);
+});
+
+test('pinned LIVE view: wrapped bundle, 3 top headlines + SELL badges + URL-button menu', () => {
+  // Poller passes the wrapped loadIfxMenuData() bundle (newsAuto.ok defined).
+  const v = renderChannelLiveView({ newsAuto: DATA.newsAuto, now: NOW }, { now: NOW });
+  assert.match(v.text, /IFX LIVE — updated/);
+  assert.match(v.text, /Top classified headlines/);
+  assert.match(v.text, /Fed flags data-dependence/);
+  assert.ok(v.text.includes('🦅'), 'HAWKISH headlines must carry a signal emoji');
+  assert.match(v.text, /Upcoming high-impact/);
+  assert.match(v.text, /Non-Farm Employment Change/);
+  // The live post doubles as the menu: URL buttons only, no callback_data.
+  const btns = v.reply_markup.flat();
+  assert.equal(btns.length, 3);
+  for (const b of btns) assert.ok(b.url && b.callback_data === undefined);
+  assert.equal(v.disable_web_page_preview, true);
+});
+
+test('pinned LIVE view fails closed on an empty feed (honest "all clear")', () => {
+  const empty = { newsAuto: { ok: true, data: { incoming: [], byTab: {} } }, now: NOW };
+  const v = renderChannelLiveView(empty, { now: NOW });
+  assert.match(v.text, /No classified news in the current cycle/);
+  assert.match(v.text, /All clear — no events in the current-week window/);
 });
