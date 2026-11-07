@@ -12,7 +12,7 @@
  * user/feed-derived strings.
  */
 import {
-  selectUpcomingHighImpact, selectLatestNews, selectAtrForSymbols, selectGoldMtfAtr,
+  selectUpcomingHighImpact, selectLatestNews, selectAtrForSymbols, selectGoldMtfAtr, selectPivots,
 } from './ifx-news-source.mjs';
 import { buildBbmaKeyboard } from './telegram-symbol-board.mjs';
 
@@ -27,6 +27,7 @@ export function unwrapIfxMenuData(wrapped) {
     atr: w.atr?.ok ? w.atr.data : null,
     atrMtf: w.atrMtf?.ok ? w.atrMtf.data : null,
     macro: w.macro?.ok ? w.macro.data : null,
+    pivots: w.pivots?.ok ? w.pivots.data : null,
   });
 }
 
@@ -48,6 +49,12 @@ function fmtPct(n) {
   if (n == null || !Number.isFinite(Number(n))) return '—';
   return Number(n).toFixed(2) + '%';
 }
+/* Per-symbol precision formatter for pivot levels (FX 4dp, JPY/gold 2dp, crypto 0dp). */
+function fmtPx(n, d) {
+  if (n == null || !Number.isFinite(Number(n))) return '—';
+  const dec = Number.isFinite(d) ? d : (Math.abs(n) < 10 ? 4 : 2);
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
 
 const IMPACT_EMOJI = { high: '🔴', medium: '🟡', low: '⚪' };
 const SIGNAL_EMOJI = { BUY: '🟢', SELL: '🔴', NEUTRAL: '⚪', BULLISH: '🟢', BEARISH: '🔴', HAWKISH: '🦅', DOVISH: '🕊️', BULL: '🟢', BEAR: '🔴' };
@@ -68,6 +75,7 @@ export function renderIfxMainMenu({ boardRows = null, dashboardUrl = null } = {}
       { text: '🔬 Analysis XAUUSD', callback_data: ifxMenuCallbackData('analysis-xau') },
       { text: '🔬 Analysis BTCUSD', callback_data: ifxMenuCallbackData('analysis-btc') },
     ],
+    [{ text: '📐 Camarilla Pivots', callback_data: ifxMenuCallbackData('pivots') }],
   ];
   if (boardRows) rows.push(buildBbmaKeyboard({ rows: boardRows, dashboardUrl })[0] ?? []);
   return Object.freeze({ text, parse_mode: 'HTML', reply_markup: rows.filter((r) => r.length) });
@@ -166,6 +174,35 @@ export function renderIfxAnalysisView(data, { symbol = 'XAUUSD' } = {}) {
     if (bits.length) { lines.push('', `<b>Macro context</b>: ${bits.join(' · ')}`); }
   }
   lines.push('', 'Heuristic ATR/technical context only — no broker execution.');
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
+}
+
+/* 📐 Camarilla Pivots — per-symbol ladder (R4..R1 / close / S1..S4) from the
+ * previous session's HLC. Fail-closed: shows what loaded; empty = honest note.
+ * Keeps under Telegram's 4096-char message cap (max ~4 symbols, compact rows). */
+export function renderIfxPivotsView(data, { maxSymbols = 4 } = {}) {
+  // Accept the wrapped loadIfxMenuData() bundle (poller path) or the raw bundle.
+  const d = data && (data.newsAuto == null || data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
+  const sel = selectPivots(d?.pivots);
+  const myt = (iso) => (iso ? new Date((iso.endsWith('Z') ? iso : iso + 'Z')).toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', hour12: false, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' MYT' : '—');
+  if (!sel.okCount) {
+    return Object.freeze({ text: '📐 <b>CAMARILLA PIVOTS</b>\n\nNo pivot data loaded yet (previous-session OHLC unavailable). It refreshes every 30 min via the ifx poller.\n\nR3/S3 = mean-reversion · R4/S4 = trend-day breakout.\nResearch context only — not a direction call.', parse_mode: 'HTML' });
+  }
+  const shown = sel.symbols.slice(0, maxSymbols);
+  const lines = [`📐 <b>CAMARILLA PIVOTS</b> — ${esc(shown.length)}/${esc(sel.okCount)} shown`];
+  lines.push(`Prev session ${esc(sel.session ?? '—')} · gen ${esc(myt(sel.generatedAt))}`, '');
+  lines.push('<i>R4 R3 R2 R1 / C / S1 S2 S3 S4</i>', '');
+  for (const s of shown) {
+    lines.push(`▍<b>${esc(s.label)}</b>  C ${fmtPx(s.c, s.decimals)}  (H ${fmtPx(s.h, s.decimals)} · L ${fmtPx(s.l, s.decimals)} · range ${fmtPx(s.range, s.decimals)})`);
+    lines.push(`   R: ${fmtPx(s.R4, s.decimals)} ${fmtPx(s.R3, s.decimals)} ${fmtPx(s.R2, s.decimals)} ${fmtPx(s.R1, s.decimals)}`);
+    lines.push(`   S: ${fmtPx(s.S1, s.decimals)} ${fmtPx(s.S2, s.decimals)} ${fmtPx(s.S3, s.decimals)} ${fmtPx(s.S4, s.decimals)}`);
+    const pos = Math.round((s.closePos ?? 0) * 100);
+    lines.push(`   closed ${pos}% of range ${pos >= 60 ? '🟢 bullish' : pos <= 40 ? '🔴 bearish' : '⚪ mid'}`);
+    lines.push('');
+  }
+  if (sel.okCount > shown.length) lines.push(`+ ${esc(sel.okCount - shown.length)} more symbol(s) — see the Pivots tab in the report page for all ${esc(sel.okCount)}.`);
+  lines.push('R3/S3 = mean-reversion targets · R4/S4 = trend-day breakout.');
+  lines.push('Research context only — not a direction call.');
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
 }
 
@@ -318,6 +355,7 @@ export function renderIfxMenuView(action, data, { boardRows = null, dashboardUrl
     case 'weekly': return renderIfxNewsUpdateView(d);
     case 'analysis-xau': return renderIfxAnalysisView(d, { symbol: 'XAUUSD' });
     case 'analysis-btc': return renderIfxAnalysisView(d, { symbol: 'BTCUSD' });
+    case 'pivots': return renderIfxPivotsView(d);
     default: return Object.freeze({ text: '⚠️ Unknown IFX menu section.', parse_mode: 'HTML' });
   }
 }

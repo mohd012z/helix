@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
   renderIfxMainMenu, renderIfxNewsEventView, renderIfxBbmaView,
   renderIfxNewsUpdateView, renderIfxAnalysisView, renderIfxMenuView,
+  renderIfxPivotsView,
   ifxMenuCallbackData, parseIfxMenuPayload, renderChannelMenuCard,
   renderChannelRecheck, renderChannelLiveView, channelMenuKeyboard,
 } from '../../macro/bbma/ifx-menu-view.mjs';
+import { selectPivots } from '../../macro/bbma/ifx-news-source.mjs';
 
 const NOW = Date.parse('2026-11-06T00:00:00Z'); // 08:00 MYT; NFP (13:30 UTC) is upcoming
 const DATA = {
@@ -192,4 +194,74 @@ test('pinned LIVE view fails closed on an empty feed (honest "all clear")', () =
   const v = renderChannelLiveView(empty, { now: NOW });
   assert.match(v.text, /No classified news in the current cycle/);
   assert.match(v.text, /All clear — no events in the current-week window/);
+});
+
+test('selectPivots returns only ok symbols in fixed order (fail-closed per symbol)', () => {
+  const pivots = {
+    method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+    symbols: {
+      XAUUSD: { ok: true, label: 'XAU/USD', decimals: 2, h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 1, R3: 1, R2: 1, R1: 1, S1: 1, S2: 1, S3: 1, S4: 1, closePos: 0.6 },
+      EURUSD: { ok: false, label: 'EUR/USD', decimals: 4, reason: 'Yahoo HTTP 429' },
+      BTCUSD: { ok: true, label: 'BTC/USD', decimals: 0, h: 80834, l: 75114, c: 75942, range: 5719, R4: 1, R3: 1, R2: 1, R1: 1, S1: 1, S2: 1, S3: 1, S4: 1, closePos: 0.15 },
+      GARBAGE: { ok: true, label: 'ZZZ', decimals: 2, h: 1, l: 1, c: 1, R4: 1, R3: 1, R2: 1, R1: 1, S1: 1, S2: 1, S3: 1, S4: 1 },
+    },
+  };
+  const sel = selectPivots(pivots);
+  assert.equal(sel.okCount, 2, 'failed + unknown symbols excluded');
+  assert.deepEqual(sel.symbols.map((s) => s.label), ['XAU/USD', 'BTC/USD'], 'fixed display order');
+  assert.equal(sel.session, '2026-11-06');
+  // empty / missing input
+  assert.equal(selectPivots(null).okCount, 0);
+  assert.equal(selectPivots({ symbols: {} }).okCount, 0);
+});
+
+test('renderIfxPivotsView shows the ladder with per-symbol precision + close-position read', () => {
+  const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: DATA.atr.data, atrMtf: DATA.atrMtf.data, macro: DATA.macro.data,
+    pivots: {
+      method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+      symbols: {
+        XAUUSD: { ok: true, label: 'XAU/USD', ticker: 'GC=F', decimals: 2, session: '2026-11-06', h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 4162.34, R3: 4137.92, R2: 4129.78, R1: 4121.64, S1: 4105.36, S2: 4097.22, S3: 4089.08, S4: 4064.66, closePos: 0.62 },
+        EURUSD: { ok: true, label: 'EUR/USD', ticker: 'EURUSD=X', decimals: 4, session: '2026-11-06', h: 1.1235, l: 1.1133, c: 1.1228, range: 0.0102, R4: 1.1284, R3: 1.1256, R2: 1.1247, R1: 1.1239, S1: 1.1218, S2: 1.1209, S3: 1.1201, S4: 1.1172, closePos: 0.31 },
+      },
+    } };
+  const v = renderIfxPivotsView(d);
+  assert.match(v.text, /CAMARILLA PIVOTS/);
+  assert.match(v.text, /2026-11-06/);
+  assert.match(v.text, /XAU\/USD/);
+  assert.match(v.text, /4,162.34/);   // R4 gold
+  assert.match(v.text, /4,064.66/);   // S4 gold
+  assert.match(v.text, /1.1284/);     // R4 EUR (4dp)
+  assert.match(v.text, /closed 62% of range/, 'close-position read (bullish)');
+  assert.match(v.text, /closed 31% of range/, 'close-position read (bearish)');
+  assert.match(v.text, /bullish/);
+  assert.match(v.text, /bearish/);
+  assert.match(v.text, /mean-reversion/);
+  // under Telegram's 4096-char cap
+  assert.ok(v.text.length <= 4096, `message must fit the cap (${v.text.length})`);
+});
+
+test('renderIfxPivotsView handles the wrapped loadIfxMenuData() bundle (poller path)', () => {
+  // Poller passes the wrapped shape: {newsAuto:{ok,data}, atr:{ok,data}, ..., pivots:{ok,data}}.
+  const wrapped = {
+    now: NOW,
+    newsAuto: DATA.newsAuto,
+    atr: DATA.atr,
+    atrMtf: DATA.atrMtf,
+    macro: DATA.macro,
+    pivots: { ok: true, data: {
+      method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
+      symbols: { XAUUSD: { ok: true, label: 'XAU/USD', decimals: 2, h: 4155.8, l: 4067, c: 4113.5, range: 88.8, R4: 4162.34, R3: 4137.92, R2: 4129.78, R1: 4121.64, S1: 4105.36, S2: 4097.22, S3: 4089.08, S4: 4064.66, closePos: 0.55 } },
+    } },
+  };
+  const v = renderIfxPivotsView(wrapped);
+  assert.match(v.text, /XAU\/USD/);
+  assert.match(v.text, /4,162.34/);
+});
+
+test('renderIfxPivotsView fails closed with no data (honest note, no fabricated ladder)', () => {
+  const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: null, atrMtf: null, macro: null, pivots: null };
+  const v = renderIfxPivotsView(d);
+  assert.match(v.text, /No pivot data loaded yet/);
+  assert.doesNotMatch(v.text, /closed \d+%/);      // no close-position read
+  assert.doesNotMatch(v.text, /R: /);               // no R ladder line
 });
