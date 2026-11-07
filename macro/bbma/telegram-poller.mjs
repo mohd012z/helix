@@ -94,9 +94,10 @@ export function makeAnswerCallback({api, log = makeNoopLog()} = {}) {
 }
 
 export function makeRespond({api, log = makeNoopLog()} = {}) {
-  return async ({chatId, text, parse_mode, reply_markup}) => {
+  return async ({chatId, text, parse_mode, reply_markup, disable_web_page_preview}) => {
     const payload = {chat_id: chatId, text, parse_mode};
     if (Array.isArray(reply_markup) && reply_markup.length) payload.reply_markup = {inline_keyboard: reply_markup};
+    if (disable_web_page_preview) payload.disable_web_page_preview = true;
     const x = await api('sendMessage', payload);
     log(`response_send=OK message_id=${x?.message_id ?? '?'}${reply_markup?.length ? ' keyboard=yes' : ''}`);
     return x;
@@ -112,6 +113,8 @@ export async function runCallbackPollLoop({
   api,
   offsetStore,
   handleUpdate,
+  handleMessage = null,
+  allowedUpdates = ['callback_query'],
   authorizedChat,
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
   log = makeNoopLog(),
@@ -146,7 +149,7 @@ export async function runCallbackPollLoop({
 
     let updates;
     try {
-      updates = await api('getUpdates', {offset, timeout: 30, allowed_updates: ['callback_query']});
+      updates = await api('getUpdates', {offset, timeout: 30, allowed_updates: allowedUpdates});
       backoff = backoffBaseMs;
     } catch (e) {
       cycles += 1;
@@ -172,6 +175,25 @@ export async function runCallbackPollLoop({
     for (const u of updates) {
       offset = Math.max(offset, Number(u.update_id) + 1);
       offsetStore.save(offset);
+
+      // ---- Text/command messages (the IFX menu entry point) ----
+      const msg = u.message;
+      if (msg && typeof handleMessage === 'function') {
+        const msgChat = String(msg?.chat?.id ?? '');
+        log(`message_received text=${JSON.stringify(String(msg?.text ?? '').slice(0, 48))} chat=${msgChat}`);
+        if (msgChat !== authorizedChat) {
+          log('message authorized=false (ignored)');
+          continue;
+        }
+        try {
+          await handleMessage({ chatId: msg.chat.id, messageId: msg.message_id, text: String(msg.text ?? ''), reply_markup: undefined }, { respond });
+          log('message handled');
+        } catch (e) {
+          log(`message_failed=${e?.message}`);
+        }
+        continue;
+      }
+
       const q = u.callback_query;
       const data = String(q?.data ?? '');
       const [scope, action, ...idParts] = data.split(':');
