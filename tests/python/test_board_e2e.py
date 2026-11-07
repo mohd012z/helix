@@ -110,6 +110,30 @@ class BoardE2ETest(unittest.TestCase):
         self.assertIn("BZ=F", brent["note"])
         self.assertIn("Yahoo", str(payload["meta"]["sourceStatus"].get("brent", {}).get("label", "")))
 
+    def test_us10y_falls_back_to_yahoo_when_fred_missing(self):
+        # Force the FRED request to return no usable observations so the
+        # keyless Yahoo ^TNX fallback must populate US 10Y.
+        base = up.get_json
+
+        def fred_fail(url, *, params=None, headers=None, retries=3):
+            if "fred" in url:
+                return {"observations": [{"date": "2026-10-15", "value": "."}]}
+            return base(url, params=params, headers=headers, retries=retries)
+
+        up.get_json = fred_fail
+        rc = up.main()
+        self.assertEqual(rc, 0)
+        payload = self._payload()
+        macro = {m["label"]: m for m in payload["macro"]}
+        us10y = macro.get("US 10Y")
+        self.assertIsNotNone(us10y, "US 10Y macro entry missing")
+        if us10y is None:  # pragma: no cover
+            return
+        # ^TNX stub = [4.13, 4.15] -> 4.150%, +2.0 bp, provenance labelled Yahoo.
+        self.assertEqual(us10y["value"], "4.150%")
+        self.assertIn("^TNX", us10y["note"])
+        self.assertIn("Yahoo", str(payload["meta"]["sourceStatus"].get("us10y", {}).get("label", "")))
+
     def test_main_generates_a_board_snapshot_that_passes_the_contract(self):
         rc = up.main()
         self.assertEqual(rc, 0)
