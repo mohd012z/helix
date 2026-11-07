@@ -24,6 +24,8 @@ import {handleTelegramCallback} from '../macro/bbma/telegram-callback-runtime.mj
 import {adaptShadowObservationForTelegram} from '../macro/bbma/telegram-observation-adapter.mjs';
 import {buildTelegramObservationHistory} from '../macro/bbma/telegram-history.mjs';
 import {buildSymbolLookup} from '../macro/bbma/telegram-symbol-board.mjs';
+import {loadIfxMenuData} from '../macro/bbma/ifx-news-source.mjs';
+import {renderIfxMainMenu} from '../macro/bbma/ifx-menu-view.mjs';
 
 const token=process.env.TELEGRAM_BOT_TOKEN;
 const allowedChat=String(process.env.TELEGRAM_CHAT_ID ?? '');
@@ -63,6 +65,9 @@ let boardLookup=buildSymbolLookup(boardRows);
 const initLedger=loadLedger();
 let history=buildTelegramObservationHistory(initLedger.rows);
 let lastRefresh=Date.now();
+// IFX UI menu data (news/calendar/ATR/macro) — refreshed with the lifecycle
+// cycle so menu answers stay current without fetching on every button tap.
+let ifxData={newsAuto:null,atr:null,atrMtf:null,macro:null,now:Date.now()};
 log(`DIAG start pid=${process.pid} offset=${offsetStore.load()} lifecycle_refresh_ms=${LIFECYCLE_REFRESH_MS}`);
 log(`DIAG ledger_source=${initLedger.source} observations=${history.size} board_symbols=${boardLookup.size}`);
 
@@ -73,11 +78,24 @@ const onCycle=async()=>{
       history=buildTelegramObservationHistory(rows);
       boardRows=loadBoardRows(boardFile);
       boardLookup=buildSymbolLookup(boardRows);
+      ifxData=await loadIfxMenuData({});
       lastRefresh=Date.now();
-      log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size}`);
+      log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size} ifx_news=${ifxData.newsAuto?.ok?ifxData.newsAuto.source:'none'}`);
     }catch(e){log(`DIAG ledger_refresh=FAIL reason=${e.message}`);}
   }
 };
+
+// Menu entry: /menu /start /help and the section aliases. Any other text is
+// answered with a menu pointer (never silently dropped), so the bot always acks.
+const MENU_TRIGGERS=new Set(['/menu','/start','/help','menu','m','home','main','news event','bbma','news update','analysis']);
+async function handleMenuMessage({chatId,text,replyMarkup},{respond}){
+  const t=String(text??'').trim();
+  const isMenuTrigger=MENU_TRIGGERS.has(t.toLowerCase());
+  const view=isMenuTrigger?renderIfxMainMenu({boardRows,dashboardUrl,pinned})
+    :{text:`📡 Send /menu for the IFX menu (News Event · BBMA · News Update · Analysis).`,parse_mode:'HTML'};
+  await respond({chatId,...view});
+  return Object.freeze({ok:true,action:'ifx-menu-message',triggered:isMenuTrigger});
+}
 
 try{
   await runCallbackPollLoop({
@@ -86,6 +104,8 @@ try{
     authorizedChat:allowedChat,
     log,
     onCycle,
+    allowedUpdates:['callback_query','message'],
+    handleMessage:(m,ctx)=>handleMenuMessage(m,ctx),
     handleUpdate:(u,{answerCallback,respond})=>handleTelegramCallback({
       update:u,
       getObservation:id=>history.getObservation(String(id)),
@@ -97,6 +117,7 @@ try{
       boardRows,
       dashboardUrl,
       pinned,
+      ifxData,
       answerCallback,
       respond,
     }),

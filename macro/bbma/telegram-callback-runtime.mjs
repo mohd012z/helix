@@ -1,10 +1,25 @@
 import {routeBbmaTelegramCallback} from './telegram-callback.mjs';
 import {renderTelegramCallbackView} from './telegram-callback-view.mjs';
+import {ifxMenuCallbackData, renderIfxMainMenu, renderIfxMenuView, unwrapIfxMenuData} from './ifx-menu-view.mjs';
 
-export async function handleTelegramCallback({update,getObservation,getCurrentStatus,getExplanation,getChanges,getObservationBySymbol=null,getBoardSymbol=null,boardRows=null,dashboardUrl=null,pinned=null,answerCallback,respond}={}){
+export async function handleTelegramCallback({update,getObservation,getCurrentStatus,getExplanation,getChanges,getObservationBySymbol=null,getBoardSymbol=null,boardRows=null,dashboardUrl=null,pinned=null,ifxData=null,answerCallback,respond}={}){
   const q=update?.callback_query;
   if(!q?.id||typeof q.data!=='string') return Object.freeze({ok:false,reason:'NOT_CALLBACK_QUERY'});
   if(typeof answerCallback!=='function'||typeof respond!=='function') throw new TypeError('Telegram callback adapters are required');
+
+  // IFX UI menu buttons (ifx:menu:*). Rendered from the injected news/ATR/macro
+  // data bundle (unwrapped to the raw {now, newsAuto, atr, atrMtf, macro} shape);
+  // independent of the BBMA observation router below.
+  if(q.data===ifxMenuCallbackData(null)||q.data.startsWith('ifx:menu:')){
+    const action=q.data.split(':')[2]??null;
+    const bundle=unwrapIfxMenuData(ifxData);
+    const view=action?renderIfxMenuView(action,bundle,{boardRows,dashboardUrl,pinned}):renderIfxMainMenu({boardRows,dashboardUrl});
+    await answerCallback({callbackQueryId:q.id,text:'Loaded'});
+    const target={chatId:q.message?.chat?.id??null,messageId:q.message?.message_id??null};
+    if(target.chatId==null) return Object.freeze({ok:false,reason:'CALLBACK_CHAT_UNAVAILABLE'});
+    await respond({...target,...view});
+    return Object.freeze({ok:true,action:'ifx-menu',mode:'IFX_MENU',section:action??null});
+  }
 
   const routed=routeBbmaTelegramCallback({data:q.data,getObservation,getCurrentStatus,getExplanation,getChanges,getObservationBySymbol,getBoardSymbol});
   // The view reads these for the status-card keyboard (dashboard + symbol row).
