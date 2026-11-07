@@ -15,8 +15,10 @@ export function buildTelegramObservationHistory(observations=[]){
   byId.set(id,row); lastBySymbol.set(symbol,row);
  }
  const getObservation=id=>byId.get(String(id))??null;
+ const norm=s=>String(s??'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const getBySymbol=symbol=>lastBySymbol.get(norm(symbol))??null;
  const getPrevious=id=>previousById.get(String(id))??null;
  const getChanges=observation=>{if(!observation)return emptyDelta();const id=String(observation.alert_id??observation.observation_id??observation.id??'');const previous=getPrevious(id);return previous?diffTelegramObservations(previous,observation):emptyDelta();};
  const getExplanation=(observation,options={})=>explainTelegramObservation(observation,classifyTelegramLifecycle(observation,options));
- return Object.freeze({size:byId.size,getObservation,getPrevious,getChanges,getExplanation});
+ return Object.freeze({size:byId.size,getObservation,getBySymbol,getPrevious,getChanges,getExplanation});
 }
