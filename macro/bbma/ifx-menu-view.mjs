@@ -178,17 +178,24 @@ export function parseIfxMenuPayload(text) {
   return m ? m[1].toLowerCase() : null;
 }
 
-/* A small URL-button footer that renders on a CHANNEL (URL buttons work;
- * callback buttons do not, since @ifxhelper2 has no linked chat). Lets a
- * channel post re-trigger the recheck without opening the DM. */
-export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot' } = {}) {
-  const base = `https://t.me/${botUsername}/start/`;
+/* Base URL of the live IFX report page (GitHub Pages, legacy build from main,
+ * auto-updates on every poller push; page auto-refreshes data each 60s). The
+ * channel's recheck buttons open this in Telegram's in-app browser — so a tap
+ * shows the FRESH output directly, without going to the bot (Anam's ask). */
+export const IFX_REPORT_BASE = 'https://mohd012z.github.io/News_ifxhelper/report.html';
+
+/* A small URL-button keyboard that renders on a CHANNEL (URL buttons work;
+ * callback buttons do not, since @ifxhelper2 has no linked chat). The two
+ * recheck buttons open the live report page (in-app browser). The full
+ * interactive menu (ATR/BBMA analysis has no web page) stays a /start DM. */
+export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot', reportBase = IFX_REPORT_BASE } = {}) {
+  const startBase = `https://t.me/${botUsername}/start/`;
   return [
     [
-      { text: '📰 Recheck Weekly News', url: base + 'ifx:menu:weekly' },
-      { text: '🔭 Recheck Upcoming', url: base + 'ifx:menu:upcoming' },
+      { text: '📰 Weekly News', url: `${reportBase}?tab=weekly` },
+      { text: '🔭 Upcoming Events', url: `${reportBase}?tab=upcoming` },
     ],
-    [{ text: '📊 Open Full IFX Menu (DM)', url: base + 'ifx:menu:home' }],
+    [{ text: '📊 Open Full IFX Menu (DM)', url: startBase + 'ifx:menu:home' }],
   ];
 }
 
@@ -196,9 +203,9 @@ export function channelMenuKeyboard({ botUsername = 'news_ifxhelperbot' } = {}) 
 export function renderChannelMenuCard({ botUsername = 'news_ifxhelperbot', dashboardUrl = null } = {}) {
   const lines = [
     '📡 <b>IFX CHANNEL MENU</b>',
-    'Tap a button to <b>recheck the live feed</b> and repost this week’s news / upcoming events right here on the channel.',
+    'Tap a button — the <b>fresh weekly news / upcoming events</b> open right here in Telegram (in-app browser, auto-updates every minute).',
     '',
-    '📰 Weekly News · 🔭 Upcoming Events · 📊 Dashboard',
+    '📰 Weekly News · 🔭 Upcoming Events · 📊 Full interactive menu (bot)',
     dashboardUrl ? `\n<code>${esc(dashboardUrl)}</code>` : '',
     '',
     'Research context only — not a direction call.',
