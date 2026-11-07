@@ -216,22 +216,105 @@ export function renderIfxPivotsView(data, { page = 1 } = {}) {
   }
   lines.push('Research context only — not a direction call.');
   const row = [];
-  if (page === 1) row.push({ text: '📏 Full Ladders (R4–S4)', callback_data: 'ifx:menu:pivots:2' });
-  else row.push({ text: '⬆️ All Symbols', callback_data: 'ifx:menu:pivots:1' });
+  if (page === 1) {
+    row.push({ text: '🎯 Choose Symbol', callback_data: 'ifx:menu:pivots:sym' });
+    row.push({ text: '📏 Full Ladders (R4–S4)', callback_data: 'ifx:menu:pivots:2' });
+  } else {
+    row.push({ text: '🎯 Choose Symbol', callback_data: 'ifx:menu:pivots:sym' });
+    row.push({ text: '⬆️ All Symbols', callback_data: 'ifx:menu:pivots:1' });
+  }
   row.push({ text: '⬅️ IFX Menu', callback_data: 'ifx:menu:home' });
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: { inline_keyboard: [row] } });
+}
+
+/* Resolve a pivot detail symbol from a raw or wrapped bundle (fail-closed). */
+function resolvePivotDetail(data, id) {
+  const d = data && (data.newsAuto == null || data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
+  const sel = selectPivots(d?.pivots);
+  const s = (id ?? null) && sel.symbols.find((x) => x.id.toUpperCase() === String(id).toUpperCase());
+  return { sel, s };
+}
+
+/* 📐 Camarilla flow step 1 — choose a symbol. Grid of buttons (3 per row);
+ * tapping one opens the full step-by-step R4..S4 calculation for it. */
+export function renderIfxPivotsChooser(data) {
+  const { sel } = resolvePivotDetail(data);
+  if (!sel.okCount) {
+    return Object.freeze({ text: '📐 <b>CAMARILLA — CHOOSE SYMBOL</b>\n\nNo pivot data loaded yet (previous-session OHLC unavailable). It refreshes every 30 min via the ifx poller.', parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '⬅️ Pivots Overview', callback_data: 'ifx:menu:pivots' }]] } });
+  }
+  const lines = [
+    '📐 <b>CAMARILLA — CHOOSE A SYMBOL</b>',
+    `Prev session ${esc(sel.session ?? '—')} · ${esc(sel.okCount)} symbols loaded`,
+    '',
+    'Tap one — the bot walks through the full calculation: prior HLC → range → step → R4·R3·R2·R1 / C / S1·S2·S3·S4.',
+  ];
+  const grid = [];
+  for (let i = 0; i < sel.symbols.length; i += 3) {
+    grid.push(sel.symbols.slice(i, i + 3).map((s) => ({ text: esc(s.label), callback_data: ifxMenuCallbackData(`pivots:sym:${s.id}`) })));
+  }
+  grid.push([{ text: '⬅️ Pivots Overview', callback_data: 'ifx:menu:pivots' }, { text: '⌂ IFX Menu', callback_data: 'ifx:menu:home' }]);
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: { inline_keyboard: grid } });
+}
+
+/* 📐 Camarilla flow step 2 — the complete, shown-working calculation for one
+ * symbol: prior-session HLC → Range → step → every level R4..S4 (Camarilla
+ * radiates from the previous CLOSE; R3/S3 mean-reversion, R4/S4 breakout). */
+export function renderIfxPivotCalcView(data, id) {
+  const { sel, s } = resolvePivotDetail(data, id);
+  if (!s) {
+    return Object.freeze({ text: `📐 <b>CAMARILLA — ${esc(id ?? 'symbol')}</b>\n\nNo pivot data loaded for this symbol yet. Refreshes every 30 min via the ifx poller.`, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔁 Choose Symbol', callback_data: 'ifx:menu:pivots:sym' }, { text: '⌂ IFX Menu', callback_data: 'ifx:menu:home' }]] } });
+  }
+  const p = s.decimals;
+  const f = (n) => fmtPx(n, p);
+  const step = s.range * 1.1;
+  const o12 = step / 12, o6 = step / 6, o4 = step / 4, o2 = step / 2;
+  const lines = [];
+  lines.push(`📐 <b>CAMARILLA — ${esc(s.label)}</b>`);
+  lines.push(`Prev session <b>${esc(s.session ?? '—')}</b> · generated ${esc(sel.generatedAt ?? '—')}`);
+  lines.push('', '<b>1 · Inputs — previous session OHLC</b>');
+  lines.push(`H (high)  = ${f(s.h)}`);
+  lines.push(`L (low)   = ${f(s.l)}`);
+  lines.push(`C (close) = ${f(s.c)}  ← levels radiate from the close`);
+  lines.push('', '<b>2 · Range</b>');
+  lines.push(`${f(s.h)} − ${f(s.l)} = ${f(s.range)}`);
+  lines.push('', '<b>3 · Step</b>');
+  lines.push(`${f(s.range)} × 1.1 = ${f(step)}`);
+  lines.push('', '<b>4 · Level offsets</b>');
+  lines.push(`step/12 = ${f(o12)}   step/6 = ${f(o6)}`);
+  lines.push(`step/4  = ${f(o4)}   step/2 = ${f(o2)}`);
+  lines.push('', '<b>5 · Resistances (above close)</b>');
+  lines.push(`R4 = ${f(s.c)} + ${f(o2)}  = ${f(s.R4)}  <i>breakout</i>`);
+  lines.push(`R3 = ${f(s.c)} + ${f(o4)}  = ${f(s.R3)}  <i>mean-reversion</i>`);
+  lines.push(`R2 = ${f(s.c)} + ${f(o6)}  = ${f(s.R2)}`);
+  lines.push(`R1 = ${f(s.c)} + ${f(o12)} = ${f(s.R1)}`);
+  lines.push('', '<b>6 · Supports (below close)</b>');
+  lines.push(`S1 = ${f(s.c)} − ${f(o12)} = ${f(s.S1)}`);
+  lines.push(`S2 = ${f(s.c)} − ${f(o6)}  = ${f(s.S2)}`);
+  lines.push(`S3 = ${f(s.c)} − ${f(o4)}  = ${f(s.S3)}  <i>mean-reversion</i>`);
+  lines.push(`S4 = ${f(s.c)} − ${f(o2)}  = ${f(s.S4)}  <i>breakout</i>`);
+  const pos = Math.round((s.closePos ?? 0) * 100);
+  lines.push('', `<i>Session read: closed ${pos}% of range ${pos >= 60 ? '🟢 bullish' : pos <= 40 ? '🔴 bearish' : '⚪ mid'}</i>`);
+  lines.push('', 'Research context only — not a direction call.');
+  return Object.freeze({
+    text: lines.join('\n'), parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: [[{ text: '🔁 Choose Symbol', callback_data: 'ifx:menu:pivots:sym' }, { text: '⌂ IFX Menu', callback_data: 'ifx:menu:home' }]] },
+  });
 }
 
 /* Parse a /start deep-link or bare payload into a menu action, or null.
  * Channel buttons are URL deep-links (https://t.me/<bot>/start/ifx:menu:weekly),
  * which Telegram delivers to the DM as the message "/start ifx:menu:weekly".
- * Pivots pagination: ifx:menu:pivots:2 = page 2 (extras symbols). */
+ * Pivots flow: ifx:menu:pivots:2 = page 2 (full ladders),
+ * ifx:menu:pivots:sym = choose-symbol, ifx:menu:pivots:sym:XAUUSD = calc view. */
 export function parseIfxMenuPayload(text) {
   const t = String(text ?? '').trim();
-  const m = /ifx:menu:([a-z0-9-]+)(?::(\d+))?/i.exec(t);
+  // Capture the whole sub-path (pivots:sym:XAUUSD) — colons allowed after the first segment.
+  const m = /ifx:menu:([a-z0-9=.-]+(?::[a-z0-9=.-]+)*)/i.exec(t);
   if (!m) return null;
-  const action = m[1].toLowerCase();
-  return action === 'pivots' && m[2] ? `pivots:${m[2]}` : action;
+  const g = m[1];
+  // Preserve the symbol id's case for the calc view; lowercase everything else.
+  if (/^pivots:sym:[a-z0-9=.-]+$/i.test(g)) return 'pivots:sym:' + g.slice('pivots:sym:'.length);
+  return g.toLowerCase();
 }
 
 /* Base URL of the live IFX report page (GitHub Pages, legacy build from main,
@@ -398,6 +481,11 @@ export function renderIfxMenuView(action, data, { boardRows = null, dashboardUrl
     case 'analysis-btc': return renderIfxAnalysisView(d, { symbol: 'BTCUSD' });
     case 'pivots': return renderIfxPivotsView(d, { page: 1 });
     case 'pivots:2': return renderIfxPivotsView(d, { page: 2 });
-    default: return Object.freeze({ text: '⚠️ Unknown IFX menu section.', parse_mode: 'HTML' });
+    case 'pivots:sym': return renderIfxPivotsChooser(d);
+    default: {
+      const sym = /^pivots:sym:([a-z0-9=.-]+)$/i.exec(action ?? '');
+      if (sym) return renderIfxPivotCalcView(d, sym[1]);
+      return Object.freeze({ text: '⚠️ Unknown IFX menu section.', parse_mode: 'HTML' });
+    }
   }
 }
