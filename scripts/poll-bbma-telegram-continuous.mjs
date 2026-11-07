@@ -25,7 +25,7 @@ import {adaptShadowObservationForTelegram} from '../macro/bbma/telegram-observat
 import {buildTelegramObservationHistory} from '../macro/bbma/telegram-history.mjs';
 import {buildSymbolLookup} from '../macro/bbma/telegram-symbol-board.mjs';
 import {loadIfxMenuData} from '../macro/bbma/ifx-news-source.mjs';
-import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelMenuCard, renderChannelRecheck, renderChannelLiveView} from '../macro/bbma/ifx-menu-view.mjs';
+import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelRecheck, renderChannelLiveView} from '../macro/bbma/ifx-menu-view.mjs';
 
 const token=process.env.TELEGRAM_BOT_TOKEN;
 const allowedChat=String(process.env.TELEGRAM_CHAT_ID ?? '');
@@ -228,17 +228,12 @@ async function handleMenuMessage({chatId,text},{respond}){
     }
   }
 
-  // 2) "home" from a channel button: re-post the channel menu card to the channel.
+  // 2) "home" from a channel button: the FULL interactive IFX menu (keyboard)
+  //    lands in the tapper's DM — that's what "Full IFX Menu (DM)" promises.
   if(payload==='home'){
-    try{
-      const card=renderChannelMenuCard({botUsername,dashboardUrl,linked:linkedState.linked});
-      const sent=await sendToChat(channelChatId,card);
-      await respond({chatId,text:`✅ Reposted the channel menu card (id ${sent?.message_id??'—'}). Tap a button to recheck.`,parse_mode:'HTML'});
-      return Object.freeze({ok:true,action:'ifx-channel-card',channelMessageId:sent?.message_id??null});
-    }catch(e){
-      await respond({chatId,text:`⚠️ Could not post the channel card: ${String(e?.message??e)}`,parse_mode:'HTML'});
-      return Object.freeze({ok:false,action:'ifx-channel-card',error:String(e?.message??e)});
-    }
+    const view=renderIfxMainMenu({boardRows,dashboardUrl,pinned});
+    await respond({chatId,...view});
+    return Object.freeze({ok:true,action:'ifx-menu-home',triggered:true});
   }
 
   // 3) Plain menu triggers (and the other section aliases) -> the DM keyboard.
