@@ -229,7 +229,7 @@ test('selectPivots returns only ok symbols in fixed order (fail-closed per symbo
   assert.equal(selectPivots({ symbols: {} }).okCount, 0);
 });
 
-test('renderIfxPivotsView shows the ladder with per-symbol precision + close-position read', () => {
+test('renderIfxPivotsView page 1 = compact all-symbols C/R3/S3, page 2 = full ladders + close-position', () => {
   const d = { now: NOW, newsAuto: DATA.newsAuto.data, atr: DATA.atr.data, atrMtf: DATA.atrMtf.data, macro: DATA.macro.data,
     pivots: {
       method: 'camarilla', generatedAt: '2026-11-07 02:00:00Z', session: '2026-11-06',
@@ -238,20 +238,27 @@ test('renderIfxPivotsView shows the ladder with per-symbol precision + close-pos
         EURUSD: { ok: true, label: 'EUR/USD', ticker: 'EURUSD=X', decimals: 4, session: '2026-11-06', h: 1.1235, l: 1.1133, c: 1.1228, range: 0.0102, R4: 1.1284, R3: 1.1256, R2: 1.1247, R1: 1.1239, S1: 1.1218, S2: 1.1209, S3: 1.1201, S4: 1.1172, closePos: 0.31 },
       },
     } };
-  const v = renderIfxPivotsView(d);
-  assert.match(v.text, /CAMARILLA PIVOTS/);
-  assert.match(v.text, /2026-11-06/);
-  assert.match(v.text, /XAU\/USD/);
-  assert.match(v.text, /4,162.34/);   // R4 gold
-  assert.match(v.text, /4,064.66/);   // S4 gold
-  assert.match(v.text, /1.1284/);     // R4 EUR (4dp)
-  assert.match(v.text, /closed 62% of range/, 'close-position read (bullish)');
-  assert.match(v.text, /closed 31% of range/, 'close-position read (bearish)');
-  assert.match(v.text, /bullish/);
-  assert.match(v.text, /bearish/);
-  assert.match(v.text, /mean-reversion/);
-  // under Telegram's 4096-char cap
-  assert.ok(v.text.length <= 4096, `message must fit the cap (${v.text.length})`);
+  const p1 = renderIfxPivotsView(d, { page: 1 });
+  assert.match(p1.text, /CAMARILLA PIVOTS/);
+  assert.match(p1.text, /2026-11-06/);
+  assert.match(p1.text, /XAU\/USD/);
+  assert.match(p1.text, /4,137\.92/);   // R3 gold (compact)
+  assert.match(p1.text, /4,089\.08/);   // S3 gold (compact)
+  assert.match(p1.text, /mean-reversion/);
+  assert.ok(p1.reply_markup.inline_keyboard.flat().some((b) => b.callback_data === 'ifx:menu:pivots:2'));
+  const p2 = renderIfxPivotsView(d, { page: 2 });
+  assert.match(p2.text, /full ladders/);
+  assert.match(p2.text, /4,162.34/);   // R4 gold
+  assert.match(p2.text, /4,064.66/);   // S4 gold
+  assert.match(p2.text, /1.1284/);     // R4 EUR (4dp)
+  assert.match(p2.text, /closed 62% of range/, 'close-position read (bullish)');
+  assert.match(p2.text, /closed 31% of range/, 'close-position read (bearish)');
+  assert.match(p2.text, /bullish/);
+  assert.match(p2.text, /bearish/);
+  assert.ok(p2.reply_markup.inline_keyboard.flat().some((b) => b.callback_data === 'ifx:menu:pivots:1'));
+  // both pages under Telegram's 4096-char cap
+  assert.ok(p1.text.length <= 4096, `page1 must fit the cap (${p1.text.length})`);
+  assert.ok(p2.text.length <= 4096, `page2 must fit the cap (${p2.text.length})`);
 });
 
 test('renderIfxPivotsView handles the wrapped loadIfxMenuData() bundle (poller path)', () => {
@@ -269,7 +276,14 @@ test('renderIfxPivotsView handles the wrapped loadIfxMenuData() bundle (poller p
   };
   const v = renderIfxPivotsView(wrapped);
   assert.match(v.text, /XAU\/USD/);
-  assert.match(v.text, /4,162.34/);
+  assert.match(v.text, /4,137\.92/); // R3 gold (page 1 compact)
+});
+
+test('parseIfxMenuPayload handles pivots pagination (ifx:menu:pivots:2)', () => {
+  assert.equal(parseIfxMenuPayload('ifx:menu:pivots:2'), 'pivots:2');
+  assert.equal(parseIfxMenuPayload('/start ifx:menu:pivots:2'), 'pivots:2');
+  assert.equal(parseIfxMenuPayload('ifx:menu:pivots'), 'pivots');
+  assert.equal(parseIfxMenuPayload('ifx:menu:weekly'), 'weekly');
 });
 
 test('renderIfxPivotsView fails closed with no data (honest note, no fabricated ladder)', () => {
