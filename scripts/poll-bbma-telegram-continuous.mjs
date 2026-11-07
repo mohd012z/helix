@@ -135,12 +135,29 @@ log(`DIAG ledger_source=${initLedger.source} observations=${history.size} board_
 // and tapping one edits the channel post IN PLACE (no browser, no DM).
 let linkedState={linked:false,checkedAt:0};
 const LINKED_TTL_MS=10*60*1000;
+const groupWelcomeFile=process.env.IFX_GROUP_WELCOME_FILE??path.join('data','bbma-ifx-group-welcomed.json');
+const groupWelcomed=()=>{try{return !!JSON.parse(fs.readFileSync(groupWelcomeFile,'utf8')).ok;}catch{return false;}};
+const markGroupWelcomed=(id)=>{try{fs.mkdirSync(path.dirname(groupWelcomeFile),{recursive:true});fs.writeFileSync(groupWelcomeFile,JSON.stringify({ok:true,chatId:id,at:new Date().toISOString()}));}catch(e){log(`DIAG group_welcome_save=FAIL reason=${e.message}`);}};
 async function isChannelLinked(){
   if(Date.now()-linkedState.checkedAt<LINKED_TTL_MS) return linkedState.linked;
   try{
     const g=await api('getChat',{chat_id:channelChatId});
     linkedState={linked:Boolean(g?.linked_chat_id),checkedAt:Date.now()};
     log(`DIAG channel_linked=${linkedState.linked} linked_chat_id=${g?.linked_chat_id??'none'}`);
+    // First time we see the group: introduce it so members/subscribers know
+    // what it is for (one-time, persisted so restarts don't re-post).
+    if(g?.linked_chat_id&&!groupWelcomed()){
+      try{
+        await api('sendMessage',{chat_id:g.linked_chat_id,text:
+          '📡 This is the official discussion group for the <b>ifxhelper_Trader</b> channel (@ifxhelper2).\n'+
+          '• Comments on channel posts appear here.\n'+
+          '• The channel menu buttons (📰 Weekly News · 🔭 Upcoming Events) now <b>update the channel post in place</b> — no browser, no bot chat.\n\n'+
+          'Research context only — not a direction call.',
+          parse_mode:'HTML'});
+        markGroupWelcomed(g.linked_chat_id);
+        log(`DIAG group_welcome=posted chat_id=${g.linked_chat_id}`);
+      }catch(e2){log(`DIAG group_welcome=FAIL reason=${e2.description??e2.message}`);}
+    }
   }catch(e){log(`DIAG channel_linked=check_fail reason=${e.message} (keeping ${linkedState.linked})`);}
   return linkedState.linked;
 }
