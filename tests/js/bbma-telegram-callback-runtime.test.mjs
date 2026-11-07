@@ -57,3 +57,29 @@ test('observed symbol id takes precedence over board price (XAU status = BBMA no
  const out=await handleTelegramCallback({update:update('bbma:status:XAUUSD'),getObservation:id=>id==='XAUUSD'?observation:null,getObservationBySymbol:s=>s.toUpperCase().includes('XAU')?observation:null,getCurrentStatus:()=>({direction:'BUY',readiness:'CONFIRMABLE'}),getBoardSymbol:s=>lookup.get(s.toUpperCase().replace(/[^A-Z0-9]/g,''))??null,boardRows,answerCallback:async()=>{},respond:async x=>response=x});
  assert.equal(out.mode,'CURRENT'); assert.match(response.text,/Mode: CURRENT/);
 });
+
+test('ifx:menu:weekly from a CHANNEL post edits it in place via onChannelCallback (no DM respond)',async()=>{
+ let ack=false, responded=false, edit;
+ const chUpdate={callback_query:{id:'cb-9',data:'ifx:menu:weekly',message:{message_id:1888,chat:{id:-1001400000001,type:'channel'}}}};
+ const out=await handleTelegramCallback({update:chUpdate,answerCallback:async()=>{ack=true;},respond:async()=>{responded=true;},onChannelCallback:async x=>{edit=x;return {channelMessageId:x.messageId};}});
+ assert.equal(out.ok,true); assert.equal(out.action,'ifx-channel-edit');
+ assert.equal(edit.chatId,-1001400000001); assert.equal(edit.messageId,1888); assert.equal(edit.action,'weekly');
+ assert.equal(ack,true,'callback must be answered (spinner cleared)');
+ assert.equal(responded,false,'no DM/chat respond on a channel edit');
+});
+
+test('ifx:menu:weekly from a DM falls through to the normal menu view (no channel edit)',async()=>{
+ let edit=false, response;
+ const out=await handleTelegramCallback({update:update('ifx:menu:weekly'),ifxData:{newsAuto:{ok:true,data:{incoming:[],byTab:{}}},now:Date.now()},answerCallback:async()=>{},respond:async x=>response=x,onChannelCallback:async()=>{edit=true;}});
+ assert.equal(out.ok,true); assert.equal(out.action,'ifx-menu');
+ assert.equal(edit,false,'DM callback must not hit the channel-edit hook');
+ assert.match(response.text,/Weekly News|WEEKLY|headlines|No classified/i,'DM still renders the section view');
+});
+
+test('channel edit failure is acknowledged with "Retry shortly" (never crashes the loop)',async()=>{
+ let ackText, out;
+ const chUpdate={callback_query:{id:'cb-10',data:'ifx:menu:upcoming',message:{message_id:1888,chat:{id:-1001400000001,type:'channel'}}}};
+ out=await handleTelegramCallback({update:chUpdate,answerCallback:async x=>{ackText=x.text;},respond:async()=>{},onChannelCallback:async()=>{throw new Error('feed down');}});
+ assert.equal(out.ok,false); assert.equal(out.action,'ifx-channel-edit');
+ assert.match(ackText,/Retry shortly/);
+});

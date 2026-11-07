@@ -97,9 +97,9 @@ const loadLivePostId=()=>{try{const o=JSON.parse(fs.readFileSync(livePostFile,'u
 const saveLivePostId=(id)=>{try{fs.mkdirSync(path.dirname(livePostFile),{recursive:true});fs.writeFileSync(livePostFile,JSON.stringify({messageId:id,updatedAt:new Date().toISOString()}));}catch(e){log(`DIAG live_post_save=FAIL reason=${e.message}`);}};
 let livePostId=loadLivePostId();
 
-async function refreshLivePost(data){
+async function refreshLivePost(data, { linked = false } = {}){
   if(!data?.newsAuto?.ok) return; // fail-closed: never pin an empty/failed view
-  const view=renderChannelLiveView(data,{now:data.now,botUsername});
+  const view=renderChannelLiveView(data,{now:data.now,botUsername,linked});
   try{
     if(!livePostId){
       const sent=await api('sendMessage',{chat_id:channelChatId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
@@ -113,7 +113,8 @@ async function refreshLivePost(data){
     log(`DIAG live_post=updated id=${livePostId} at=${view.text.split('\n')[0].replace(/<[^>]+>/g,'')}`);
   }catch(e){
     // Post was deleted (or first send raced) -> recreate once.
-    if(e.message&&/message to edit not found/i.test(e.message)){
+    const desc=`${e?.description??''} ${e?.message??''}`;
+    if(/message to edit not found/i.test(desc)){
       log('DIAG live_post=deleted, recreating');
       try{
         const sent=await api('sendMessage',{chat_id:channelChatId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
@@ -128,6 +129,33 @@ async function refreshLivePost(data){
 log(`DIAG start pid=${process.pid} offset=${offsetStore.load()} lifecycle_refresh_ms=${LIFECYCLE_REFRESH_MS} live_post_id=${livePostId}`);
 log(`DIAG ledger_source=${initLedger.source} observations=${history.size} board_symbols=${boardLookup.size}`);
 
+// Linked-discussion-group detection (checked each data refresh, cached 10 min):
+// getChat(@ifxhelper2).linked_chat_id is only visible to the bot when it is a
+// MEMBER of the linked group. true -> channel buttons become callback buttons
+// and tapping one edits the channel post IN PLACE (no browser, no DM).
+let linkedState={linked:false,checkedAt:0};
+const LINKED_TTL_MS=10*60*1000;
+async function isChannelLinked(){
+  if(Date.now()-linkedState.checkedAt<LINKED_TTL_MS) return linkedState.linked;
+  try{
+    const g=await api('getChat',{chat_id:channelChatId});
+    linkedState={linked:Boolean(g?.linked_chat_id),checkedAt:Date.now()};
+    log(`DIAG channel_linked=${linkedState.linked} linked_chat_id=${g?.linked_chat_id??'none'}`);
+  }catch(e){log(`DIAG channel_linked=check_fail reason=${e.message} (keeping ${linkedState.linked})`);}
+  return linkedState.linked;
+}
+
+// Channel callback hook: fresh data -> renderChannelRecheck -> editMessageText
+// on the tapped channel post. The reply_markup re-carries the menu, so the
+// post stays tappable after every tap.
+async function onChannelCallback({action,chatId,messageId}){
+  const fresh=await loadIfxMenuData({});
+  if(!fresh.newsAuto?.ok) throw new Error('news feed not loaded yet');
+  const view=renderChannelRecheck(action,fresh,{now:fresh.now,botUsername,dashboardUrl,linked:linkedState.linked});
+  await api('editMessageText',{chat_id:chatId,message_id:messageId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+  return {channelMessageId:messageId};
+}
+
 const onCycle=async()=>{
   if(Date.now()-lastRefresh>=LIFECYCLE_REFRESH_MS){
     try{
@@ -138,7 +166,8 @@ const onCycle=async()=>{
       ifxData=await loadIfxMenuData({});
       lastRefresh=Date.now();
       log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size} ifx_news=${ifxData.newsAuto?.ok?ifxData.newsAuto.source:'none'}`);
-      await refreshLivePost(ifxData); // create-or-edit the pinned LIVE channel post
+      const linked=await isChannelLinked();
+      await refreshLivePost(ifxData,{linked}); // create-or-edit the pinned LIVE channel post
     }catch(e){log(`DIAG ledger_refresh=FAIL reason=${e.message}`);}
   }
 };
@@ -158,7 +187,7 @@ async function handleMenuMessage({chatId,text},{respond}){
   if(payload&&CHANNEL_RECHECK.has(payload)){
     try{
       const fresh=await loadIfxMenuData({});
-      const view=renderChannelRecheck(payload,fresh,{now:fresh.now,botUsername,dashboardUrl});
+      const view=renderChannelRecheck(payload,fresh,{now:fresh.now,botUsername,dashboardUrl,linked:linkedState.linked});
       const sent=await sendToChat(channelChatId,view);
       const myt=new Date(fresh.now+8*3600*1000).toISOString().slice(11,16);
       const label=payload==='upcoming'?'🔭 upcoming events':'📰 weekly news';
@@ -173,7 +202,7 @@ async function handleMenuMessage({chatId,text},{respond}){
   // 2) "home" from a channel button: re-post the channel menu card to the channel.
   if(payload==='home'){
     try{
-      const card=renderChannelMenuCard({botUsername,dashboardUrl});
+      const card=renderChannelMenuCard({botUsername,dashboardUrl,linked:linkedState.linked});
       const sent=await sendToChat(channelChatId,card);
       await respond({chatId,text:`✅ Reposted the channel menu card (id ${sent?.message_id??'—'}). Tap a button to recheck.`,parse_mode:'HTML'});
       return Object.freeze({ok:true,action:'ifx-channel-card',channelMessageId:sent?.message_id??null});
@@ -214,6 +243,7 @@ try{
       ifxData,
       answerCallback,
       respond,
+      onChannelCallback,
     }),
   });
 }catch(e){
