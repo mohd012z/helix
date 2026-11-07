@@ -44,6 +44,9 @@ export function adaptSnapshot(snapshot = {}) {
     news: Array.isArray(snapshot.news) ? snapshot.news.slice() : [],
     speakers: Array.isArray(snapshot.speakers) ? snapshot.speakers.slice() : [],
     board: snapshot.board && typeof snapshot.board === 'object' ? snapshot.board : null,
+    levels: snapshot.levels && typeof snapshot.levels === 'object' ? snapshot.levels : null,
+    macro: Array.isArray(snapshot.macro) ? snapshot.macro.slice() : null,
+    sentiment: snapshot.sentiment && typeof snapshot.sentiment === 'object' ? snapshot.sentiment : null,
     sourceStatus: meta.sourceStatus ?? {},
     sources
   };

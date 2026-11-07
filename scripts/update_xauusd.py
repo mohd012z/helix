@@ -127,6 +127,28 @@ def td_time_series(api_key: str, symbol: str, outputsize: int = 370) -> tuple[li
     return vals, data.get("name")
 
 
+def yahoo_daily_closes(ticker: str, n: int = 3) -> list[float]:
+    """Keyless last-n daily closes (ascending) from Yahoo's v8 chart API.
+
+    Used as a fallback when Twelve Data cannot confirm the DXY/Brent symbol
+    (TD discovery returns nothing on the free tier). Same source + tickers the
+    News_ifxhelper poller already relies on (DX-Y.NYB / BZ=F / ^TNX)."""
+    from urllib.parse import quote
+    r = requests.get(
+        "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(ticker),
+        params={"range": "10d", "interval": "1d"},
+        headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) helix-macro/1.0"},
+        timeout=15,
+    )
+    r.raise_for_status()
+    result = (r.json().get("chart") or {}).get("result") or [{}]
+    quote_data = (result[0].get("indicators") or {}).get("quote") or [{}]
+    closes = [c for c in (quote_data[0].get("close") or []) if c is not None]
+    if len(closes) < 2:
+        raise SourceError(f"Yahoo returned fewer than two closes for {ticker}")
+    return closes[-n:]
+
+
 def td_resolve_symbol(api_key: str, query: str, exact_names=()) -> str | None:
     data = get_json(
         "https://api.twelvedata.com/symbol_search",
@@ -454,10 +476,11 @@ def main() -> int:
         print(f"ERROR: XAU/USD fetch failed: {exc}", file=sys.stderr)
         return 3
 
-    # --- DXY: best effort; never substitute another index silently ---
+    # --- DXY: Twelve Data (confirmed symbol) first, keyless Yahoo fallback ---
     dxy_item = {"label": "DXY", "value": "—", "delta": "unavailable", "tone": "", "note": "Provider symbol not confirmed"}
     dxy_pct = None
     dxy_series = None
+    dxy_ok = False
     try:
         sym = td_resolve_symbol(td_key, "DXY", ("US Dollar Index", "U.S. Dollar Index"))
         if not sym:
@@ -469,12 +492,24 @@ def main() -> int:
         dxy_item = {"label": "DXY", "value": f"{dv:.2f}", "delta": f"{dxy_pct:+.2f}%", "tone": "bad" if dxy_pct > 0 else "good", "note": f"Twelve Data {sym}; daily close"}
         dxy_series = generic_series(dxy, f"DXY daily close ({sym})", "index", 14)
         status["dxy"] = source_entry(True, "Twelve Data DXY", f"symbol {sym}; latest {da['datetime']}")
+        dxy_ok = True
     except Exception as exc:
         status["dxy"] = source_entry(False, "Twelve Data DXY", str(exc))
-        warnings.append("DXY unavailable; dashboard shows — rather than substituting an unverified dollar index.")
+    if not dxy_ok:
+        # Fallback: the US Dollar Index the News_ifxhelper poller already reads
+        # (keyless). Labelled as Yahoo so it's never mistaken for the TD feed.
+        try:
+            y = yahoo_daily_closes("DX-Y.NYB", 3)
+            dv, dp = f(y[-1]), f(y[-2])
+            dxy_pct = pct_change(dv, dp)
+            dxy_item = {"label": "DXY", "value": f"{dv:.2f}", "delta": f"{dxy_pct:+.2f}%", "tone": "bad" if dxy_pct > 0 else "good", "note": "Yahoo Finance DX-Y.NYB; daily close (TD symbol unconfirmed)"}
+            status["dxy"] = source_entry(True, "Yahoo Finance DXY (fallback)", "DX-Y.NYB daily close")
+        except Exception as yexc:
+            warnings.append(f"DXY unavailable from both sources (TD symbol unconfirmed; Yahoo: {yexc}); dashboard shows — rather than substituting an unverified dollar index.")
 
-    # --- Brent: best effort with catalog discovery ---
+    # --- Brent: Twelve Data catalog first, keyless Yahoo fallback (BZ=F) ---
     brent_item = {"label": "Brent", "value": "—", "delta": "unavailable", "tone": "", "note": "Provider symbol not confirmed"}
+    brent_ok = False
     try:
         bsym = td_resolve_commodity(td_key, "Brent")
         if not bsym:
@@ -485,9 +520,18 @@ def main() -> int:
         bpc = pct_change(bv, bp)
         brent_item = {"label": "Brent", "value": f"${bv:.2f}", "delta": f"{bpc:+.2f}%", "tone": "bad" if bpc > 0 else "good", "note": f"Twelve Data {bsym}; daily close"}
         status["brent"] = source_entry(True, "Twelve Data Brent", f"symbol {bsym}; latest {ba['datetime']}")
+        brent_ok = True
     except Exception as exc:
         status["brent"] = source_entry(False, "Twelve Data Brent", str(exc))
-        warnings.append("Brent unavailable for this run.")
+    if not brent_ok:
+        try:
+            y = yahoo_daily_closes("BZ=F", 3)
+            bv, bp = f(y[-1]), f(y[-2])
+            bpc = pct_change(bv, bp)
+            brent_item = {"label": "Brent", "value": f"${bv:.2f}", "delta": f"{bpc:+.2f}%", "tone": "bad" if bpc > 0 else "good", "note": "Yahoo Finance BZ=F; daily close (TD catalog miss)"}
+            status["brent"] = source_entry(True, "Yahoo Finance Brent (fallback)", "BZ=F daily close")
+        except Exception as yexc:
+            warnings.append(f"Brent unavailable from both sources (TD catalog miss; Yahoo: {yexc}).")
 
     # --- Market board: FX majors, minors/crosses, metals, digital assets ---
     board = collect_board(td_key, status, elapsed_since_preboard=time.monotonic() - t0)
