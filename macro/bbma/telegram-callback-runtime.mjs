@@ -13,10 +13,10 @@ export async function handleTelegramCallback({update,getObservation,getCurrentSt
   if(q.data===ifxMenuCallbackData(null)||q.data.startsWith('ifx:menu:')){
     const action=q.data.split(':')[2]??null;
 
-    // Linked-channel recheck (weekly/upcoming callback buttons on a channel
-    // post): the bot EDITs the tapped channel post in place with fresh output
-    // (zero browser, zero DM) via the injected hook.
-    if(onChannelCallback && (action==='weekly'||action==='upcoming')
+    // Linked-channel recheck (weekly/upcoming/pivots callback buttons on a
+    // channel post): the bot EDITs the tapped channel post in place with fresh
+    // output (zero browser, zero DM) via the injected hook.
+    if(onChannelCallback && (action==='weekly'||action==='upcoming'||action==='pivots')
        && q.message?.chat?.type==='channel'){
       try{
         await answerCallback({callbackQueryId:q.id,text:'Loading…'});
