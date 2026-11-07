@@ -101,6 +101,25 @@ class BoardE2ETest(unittest.TestCase):
         self.assertTrue(xau["ok"])
         self.assertEqual(xau["last"], 4327.23)
 
+    def test_board_verify_mode_requests_only_short_xau_history_and_no_optional_td_search(self):
+        self._queries = []
+        base_get = up.get_json
+        def spy_get(url, *, params=None, headers=None, retries=3):
+            self._queries.append((url, dict(params or {})))
+            return base_get(url, params=params, headers=headers, retries=retries)
+        up.get_json = spy_get
+        up.os.environ["BOARD_VERIFY_MODE"] = "1"
+        rc = up.main()
+        self.assertEqual(rc, 0)
+        xau = [params for url, params in self._queries
+               if "time_series" in url and params.get("symbol") == "XAU/USD"]
+        self.assertEqual(len(xau), 1)
+        self.assertEqual(xau[0].get("outputsize"), 60)
+        self.assertFalse(any("symbol_search" in url or "commodities" in url
+                             for url, _ in self._queries),
+                         "optional Twelve Data discovery must not spend verification credits")
+        self.assertEqual(verify_snapshot_text(self._tmp_path.read_text(encoding="utf-8")), [])
+
     def test_hard_failed_symbol_stays_unavailable(self):
         hard = up.get_json
 

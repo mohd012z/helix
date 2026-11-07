@@ -7,6 +7,8 @@ import { auditEndpoint } from '../config/endpoints.mjs';
 const URL_RE = /https?:\/\/[^\s"'<>`)]+/g;
 const SKIP = new Set(['.git','node_modules','dist','build','coverage']);
 const SKIP_PREFIXES = ['docs/','tests/'];
+// An SVG namespace URI identifies XML elements; it is not a network endpoint.
+const NON_NETWORK_XML_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 function normalized(value) {
   return value.split(path.sep).join('/');
@@ -30,6 +32,7 @@ export async function scanEndpointFiles(root='.') {
       let text; try { text=await fs.readFile(full,'utf8'); } catch { continue; }
       text.split(/\r?\n/).forEach((lineText,index)=>{
         for (const match of lineText.matchAll(URL_RE)) {
+          if (match[0] === NON_NETWORK_XML_NAMESPACE) continue;
           const result=auditEndpoint(match[0]);
           if (!result.ok) findings.push({file:normalized(path.relative(absoluteRoot,full)),line:index+1,url:match[0],reasons:result.reasons});
         }

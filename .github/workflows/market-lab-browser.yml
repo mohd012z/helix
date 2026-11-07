@@ -1,0 +1,44 @@
+name: HELIX Market Lab Browser Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'market-lab/**'
+      - 'xauusd-data.js'
+      - 'tests/browser/**'
+      - '.github/workflows/market-lab-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    name: Mobile / tablet / desktop Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install pinned browser test dependency
+        run: npm install --prefix tests/browser --ignore-scripts --no-audit --no-fund
+
+      - name: Check test source syntax
+        run: node --check tests/browser/market-lab-smoke.mjs
+
+      - name: Run isolated browser smoke tests
+        run: node tests/browser/market-lab-smoke.mjs
+        env:
+          CI: 'true'
+
+      - name: Preserve screenshots and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: helix-market-lab-browser-evidence
+          path: tests/browser/artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
