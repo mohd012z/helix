@@ -39,6 +39,7 @@ class BoardE2ETest(unittest.TestCase):
         self._get_text = up.get_text
         self._sleep = up.time.sleep
         self._out = up.OUT
+        self._yahoo = up.yahoo_daily_closes
         self._env = up.os.environ.copy()
 
         import os
@@ -46,6 +47,15 @@ class BoardE2ETest(unittest.TestCase):
         fd, name = tempfile.mkstemp(suffix=".js", prefix="board-e2e-")
         os.close(fd)
         self._tmp_path = Path(name)
+
+        # Keyless Yahoo fallback stub: deterministic closes so the fallback
+        # path (Brent's TD 404) is exercised without real network. Ascending.
+        self._yahoo_map = {"DX-Y.NYB": [100.00, 100.12], "BZ=F": [81.40, 82.10], "^TNX": [4.13, 4.15]}
+
+        def fake_yahoo(ticker, n=3):
+            return list(self._yahoo_map.get(ticker, [1.0, 2.0])[-n:])
+
+        up.yahoo_daily_closes = fake_yahoo
 
         def fake_get_json(url, *, params=None, headers=None, retries=3):
             # Realistic stub: every symbol resolves and returns bars, so the
@@ -75,10 +85,30 @@ class BoardE2ETest(unittest.TestCase):
         up.os.environ.pop("NEWS_API_KEY", None)
 
     def tearDown(self):
-        up.get_json, up.get_text, up.time.sleep, up.OUT = self._get_json, self._get_text, self._sleep, self._out
+        up.get_json, up.get_text, up.time.sleep, up.OUT, up.yahoo_daily_closes = (
+            self._get_json, self._get_text, self._sleep, self._out, self._yahoo)
         up.os.environ.clear()
         up.os.environ.update(self._env)
         self._tmp_path.unlink(missing_ok=True)
+
+    def _payload(self):
+        text = self._tmp_path.read_text(encoding="utf")
+        return json.loads(text[text.find("window.XAUUSD_DATA = ") + len("window.XAUUSD_DATA = "):text.rfind(";")].strip())
+
+    def test_brent_falls_back_to_keyless_yahoo_when_td_404(self):
+        rc = up.main()
+        self.assertEqual(rc, 0)
+        payload = self._payload()
+        macro = {m["label"]: m for m in payload["macro"]}
+        brent = macro.get("Brent")
+        self.assertIsNotNone(brent, "Brent macro entry missing")
+        if brent is None:  # pragma: no cover - guard for static checkers
+            return
+        # TD catalog resolves BNT/USD but its time-series 404s (stubbed), so the
+        # fallback must populate Brent from Yahoo BZ=F and label the provenance.
+        self.assertEqual(brent["value"], "$82.10")
+        self.assertIn("BZ=F", brent["note"])
+        self.assertIn("Yahoo", str(payload["meta"]["sourceStatus"].get("brent", {}).get("label", "")))
 
     def test_main_generates_a_board_snapshot_that_passes_the_contract(self):
         rc = up.main()
