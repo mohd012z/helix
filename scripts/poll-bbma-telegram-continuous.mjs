@@ -25,7 +25,7 @@ import {adaptShadowObservationForTelegram} from '../macro/bbma/telegram-observat
 import {buildTelegramObservationHistory} from '../macro/bbma/telegram-history.mjs';
 import {buildSymbolLookup} from '../macro/bbma/telegram-symbol-board.mjs';
 import {loadIfxMenuData} from '../macro/bbma/ifx-news-source.mjs';
-import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelMenuCard, renderChannelRecheck} from '../macro/bbma/ifx-menu-view.mjs';
+import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelMenuCard, renderChannelRecheck, renderChannelLiveView} from '../macro/bbma/ifx-menu-view.mjs';
 
 const token=process.env.TELEGRAM_BOT_TOKEN;
 const allowedChat=String(process.env.TELEGRAM_CHAT_ID ?? '');
@@ -82,11 +82,50 @@ let boardRows=loadBoardRows(boardFile);
 let boardLookup=buildSymbolLookup(boardRows);
 const initLedger=loadLedger();
 let history=buildTelegramObservationHistory(initLedger.rows);
-let lastRefresh=Date.now();
+// 0 => force a full local refresh on the first cycle (the pinned LIVE post
+// appears at startup instead of after one lifecycle interval).
+let lastRefresh=0;
 // IFX UI menu data (news/calendar/ATR/macro) — refreshed with the lifecycle
 // cycle so menu answers stay current without fetching on every button tap.
 let ifxData={newsAuto:null,atr:null,atrMtf:null,macro:null,now:Date.now()};
-log(`DIAG start pid=${process.pid} offset=${offsetStore.load()} lifecycle_refresh_ms=${LIFECYCLE_REFRESH_MS}`);
+
+// Pinned "LIVE" post on the channel: created once, then EDITED IN PLACE every
+// data refresh so subscribers always see fresh output with zero taps. The
+// post id is persisted so a restart doesn't create a duplicate.
+const livePostFile=process.env.IFX_LIVE_POST_FILE??path.join('data','bbma-ifx-live-post.json');
+const loadLivePostId=()=>{try{const o=JSON.parse(fs.readFileSync(livePostFile,'utf8'));return Number(o?.messageId)||null;}catch{return null;}};
+const saveLivePostId=(id)=>{try{fs.mkdirSync(path.dirname(livePostFile),{recursive:true});fs.writeFileSync(livePostFile,JSON.stringify({messageId:id,updatedAt:new Date().toISOString()}));}catch(e){log(`DIAG live_post_save=FAIL reason=${e.message}`);}};
+let livePostId=loadLivePostId();
+
+async function refreshLivePost(data){
+  if(!data?.newsAuto?.ok) return; // fail-closed: never pin an empty/failed view
+  const view=renderChannelLiveView(data,{now:data.now,botUsername});
+  try{
+    if(!livePostId){
+      const sent=await api('sendMessage',{chat_id:channelChatId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+      livePostId=sent?.message_id??null;
+      if(livePostId){saveLivePostId(livePostId);
+        try{await api('pinChatMessage',{chat_id:channelChatId,message_id:livePostId,disable_notification:true});log(`DIAG live_post=pinned id=${livePostId}`);}
+        catch(pe){log(`DIAG live_post_pin=FAIL reason=${pe.message} (post still live id=${livePostId})`);}}
+    }else{
+      await api('editMessageText',{chat_id:channelChatId,message_id:livePostId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+    }
+    log(`DIAG live_post=updated id=${livePostId} at=${view.text.split('\n')[0].replace(/<[^>]+>/g,'')}`);
+  }catch(e){
+    // Post was deleted (or first send raced) -> recreate once.
+    if(e.message&&/message to edit not found/i.test(e.message)){
+      log('DIAG live_post=deleted, recreating');
+      try{
+        const sent=await api('sendMessage',{chat_id:channelChatId,text:view.text,parse_mode:view.parse_mode,disable_web_page_preview:true,reply_markup:{inline_keyboard:view.reply_markup}});
+        livePostId=sent?.message_id??null;
+        if(livePostId){saveLivePostId(livePostId);await api('pinChatMessage',{chat_id:channelChatId,message_id:livePostId,disable_notification:true});}
+        log(`DIAG live_post=recreated id=${livePostId}`);
+      }catch(e2){log(`DIAG live_post_recreate=FAIL reason=${e2.message}`);}
+    }else log(`DIAG live_post=FAIL reason=${e.message}`);
+  }
+}
+
+log(`DIAG start pid=${process.pid} offset=${offsetStore.load()} lifecycle_refresh_ms=${LIFECYCLE_REFRESH_MS} live_post_id=${livePostId}`);
 log(`DIAG ledger_source=${initLedger.source} observations=${history.size} board_symbols=${boardLookup.size}`);
 
 const onCycle=async()=>{
@@ -99,6 +138,7 @@ const onCycle=async()=>{
       ifxData=await loadIfxMenuData({});
       lastRefresh=Date.now();
       log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size} ifx_news=${ifxData.newsAuto?.ok?ifxData.newsAuto.source:'none'}`);
+      await refreshLivePost(ifxData); // create-or-edit the pinned LIVE channel post
     }catch(e){log(`DIAG ledger_refresh=FAIL reason=${e.message}`);}
   }
 };

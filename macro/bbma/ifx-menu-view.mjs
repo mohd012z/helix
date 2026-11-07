@@ -244,7 +244,7 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
     return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername }) });
   }
   // default: weekly news
-  const items = selectLatestNews(data.newsAuto, { now, limit: 10 });
+  const items = selectLatestNews(d?.newsAuto, { now: t, limit: 10 });
   const lines = [`📰 <b>WEEKLY NEWS — rechecked ${myt} MYT</b>`, ''];
   if (!items.length) {
     lines.push('No classified news headlines loaded yet (feed may be empty).');
@@ -261,6 +261,30 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
     lines.push('', 'Latest classified headlines, deduped (non-NEUTRAL first).');
   }
   lines.push('', 'Research context only — not a direction call.');
+  return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername }) });
+}
+
+/* The pinned "LIVE" channel post content — the poller edits this in place
+ * every ~5 min (onCycle) so the 9 subscribers always see fresh weekly news +
+ * upcoming events WITHOUT tapping anything. Compact: 3 top headlines with
+ * SELL/BUY bias + the next high-impact event, then the URL-button menu. */
+export function renderChannelLiveView(data, { now = Date.now(), botUsername = 'news_ifxhelperbot' } = {}) {
+  const d = (data && data.newsAuto && data.newsAuto.ok !== undefined) ? unwrapIfxMenuData(data) : data;
+  const t = d?.now ?? now;
+  const myt = new Date(t + 8 * 3600 * 1000).toISOString().slice(11, 16);
+  const items = selectLatestNews(d?.newsAuto, { now: t, limit: 3 });
+  const lines = [`📡 <b>IFX LIVE — updated ${myt} MYT</b>`, ''];
+  lines.push('<b>Top classified headlines</b>');
+  if (!items.length) lines.push('No classified news in the current cycle.');
+  else items.forEach((n) => {
+    const sig = n.signal && n.signal !== 'NEUTRAL' ? n.signal : 'NEUTRAL';
+    lines.push(`${SIGNAL_EMOJI[sig] ?? '⚪'} ${esc(n.title)}`);
+  });
+  const rows = selectUpcomingHighImpact(d?.newsAuto, { now: t, limit: 3 });
+  lines.push('', '<b>Upcoming high-impact</b>');
+  if (!rows.length) lines.push('All clear — no events in the current-week window.');
+  else rows.forEach((r) => lines.push(`🔴 ${esc(r.event)} — ${esc(r.timeMyt)} MYT (${esc(r.countdown)})`));
+  lines.push('', '📰 Full weekly · 🔭 Full upcoming · 📊 Interactive menu:');
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername }) });
 }
 
