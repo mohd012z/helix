@@ -12,6 +12,7 @@ on:
       - 'xauusd-data.js'
       - 'macro-preview.html'
       - 'macro/**'
+      - 'invo-methods/**'
       - 'data/**'
       - '.nojekyll'
       - '.github/workflows/pages.yml'
@@ -79,6 +80,10 @@ jobs:
             cp -R macro _site/macro
           fi
 
+          if [ -d "invo-methods" ]; then
+            cp -R invo-methods _site/invo-methods
+          fi
+
           if [ -d "data" ]; then
             cp -R data _site/data
           fi
@@ -95,6 +100,8 @@ jobs:
           test -s _site/index.html
           test -s _site/xauusd-data.js
           test -f _site/macro/ui/runtime-safety.js
+          test -s _site/invo-methods/index.html
+          test -s _site/invo-methods/signal-lab.mjs
           grep -q 'VEYRA' _site/index.html
 
           echo "Files prepared:"

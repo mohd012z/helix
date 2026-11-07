@@ -5,6 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'macro/**'
+      - 'invo-methods/**'
       - 'data/**'
       - 'scripts/**'
       - 'config/**'
@@ -20,6 +21,7 @@ on:
     paths:
       - 'index.html'
       - 'macro/**'
+      - 'invo-methods/**'
       - 'data/**'
       - 'scripts/**'
       - 'config/**'
@@ -99,6 +101,7 @@ jobs:
           node --check macro/ui/trade-plan-integration.mjs
           node --check macro/ui/runtime-safety.js
           node --check macro/ui/app.mjs
+          node --check invo-methods/signal-lab.mjs
 
       - name: Install Python dependencies for collector tests
         run: |
