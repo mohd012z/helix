@@ -119,13 +119,16 @@ test('channel menu card carries /start URL buttons that render on a channel', ()
   // Every channel button must be a URL button (no callback_data — channels can't fire callbacks).
   assert.ok(btns.length >= 3);
   for (const b of btns) {
-    assert.match(b.url, /^https:\/\/t\.me\/news_ifxhelperbot\/start\//);
+    assert.ok(b.url, 'channel button must be a URL button');
     assert.equal(b.callback_data, undefined, 'channel buttons must not use callback_data');
   }
   const urls = btns.map((b) => b.url);
-  assert.ok(urls.some((u) => u.endsWith('ifx:menu:weekly')));
-  assert.ok(urls.some((u) => u.endsWith('ifx:menu:upcoming')));
+  // The recheck buttons open the LIVE report page (in-app browser) — no bot DM.
+  assert.ok(urls.some((u) => u.startsWith('https://mohd012z.github.io/News_ifxhelper/report.html?tab=weekly')));
+  assert.ok(urls.some((u) => u.startsWith('https://mohd012z.github.io/News_ifxhelper/report.html?tab=upcoming')));
+  // Only the full interactive menu (ATR/BBMA, no web page) still opens the bot DM.
   assert.ok(urls.some((u) => u.endsWith('ifx:menu:home')));
+  assert.equal(btns.filter((b) => b.url.includes('/start/')).length, 1, 'exactly one DM deep-link (full menu)');
 });
 
 test('channel recheck (weekly) lists fresh headlines with a recheck timestamp + URL footer', () => {
