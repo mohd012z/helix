@@ -115,7 +115,8 @@ export async function loadIfxMenuData({ now = Date.now(), files = {} } = {}) {
   const atr = await loadObject('ATR_DATA', (files.atr ?? (dir + '/atr.js')));
   const atrMtf = await loadObject('ATR_MTF', (files.atrMtf ?? (dir + '/atr-mtf.js')));
   const macro = await loadObject('MACRO_AUTO', (files.macro ?? (dir + '/macro-auto.js')));
-  return Object.freeze({ now, newsAuto, atr, atrMtf, macro });
+  const pivots = await loadObject('PIVOTS_AUTO', (files.pivots ?? (dir + '/pivots.js')));
+  return Object.freeze({ now, newsAuto, atr, atrMtf, macro, pivots });
 }
 
 /* Upcoming high-impact events (this-week window), soonest first, with MYT times. */
@@ -175,4 +176,24 @@ export function selectGoldMtfAtr(atrMtf) {
     if (t) out[k] = Object.freeze({ tf: k, atr: t.atr, state: t.state, last: t.last, closedBars: t.closedBars, asOf: t.asOf });
   }
   return Object.freeze({ instrument: atrMtf?.instrument ?? null, readyCount: atrMtf?.readyCount ?? null, total: atrMtf?.total ?? null, state: atrMtf?.state ?? null, timeframes: out });
+}
+
+/* Camarilla pivot symbols in display order. Only ok:true entries are returned;
+ * a failed symbol is omitted (the view shows what loaded, fail-closed). */
+const PIVOT_ORDER = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'BTCUSD', 'ETHUSD', 'DXY'];
+export function selectPivots(pivots, { limit = PIVOT_ORDER.length } = {}) {
+  const symbols = pivots?.symbols ?? {};
+  const out = [];
+  for (const id of PIVOT_ORDER) {
+    const s = symbols[id];
+    if (s?.ok) out.push(Object.freeze({ ...s }));
+    if (out.length >= limit) break;
+  }
+  return Object.freeze({
+    method: pivots?.method ?? 'camarilla',
+    generatedAt: pivots?.generatedAt ?? null,
+    session: pivots?.session ?? null,
+    okCount: out.length,
+    symbols: out,
+  });
 }
