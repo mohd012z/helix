@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   callback-live:
+    if: vars.TELEGRAM_RUNTIME == '' || vars.TELEGRAM_RUNTIME == 'actions'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

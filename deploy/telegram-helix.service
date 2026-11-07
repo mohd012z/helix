@@ -1,0 +1,31 @@
+[Unit]
+Description=helix persistent Telegram listener
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=telegram-bots
+Group=telegram-bots
+WorkingDirectory=/opt/telegram-bots/helix
+EnvironmentFile=/etc/telegram-bots/helix.env
+Environment=PYTHONUNBUFFERED=1
+Environment=TELEGRAM_RUNTIME=persistent
+StateDirectory=telegram-helix
+StateDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/bin/flock -n -E 78 /var/lib/telegram-helix/poller.lock /usr/bin/node scripts/poll-bbma-telegram.mjs
+Restart=on-failure
+RestartSec=10
+RestartPreventExitStatus=78
+TimeoutStopSec=90
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+
+[Install]
+WantedBy=multi-user.target
