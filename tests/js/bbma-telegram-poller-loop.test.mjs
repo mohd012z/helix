@@ -104,6 +104,56 @@ test('loop consumes authorized callback exactly once and advances offset', async
   assert.equal(send.body.chat_id, '30006405');
 });
 
+test('loop authorizes the IFX channel callback (in-place channel button) and routes it', async () => {
+  const channelCb = {
+    update_id: 1,
+    callback_query: {
+      id: 'q1', data: 'ifx:menu:weekly',
+      message: {message_id: 1888, chat: {id: -1001400000001, type: 'channel', title: 'ifxhelper_Trader'}},
+    },
+  };
+  const {fn, calls} = fakeFetch([
+    {status: 200, result: [channelCb]}, // getUpdates
+    {status: 200, result: []},          // next getUpdates (empty)
+  ]);
+  const api = makeTelegramApi({fetchFn: fn, token: 'TOK'});
+  const os = makeOffsetStore({fs: fakeFs({}), path: {dirname: () => '/x'}, filePath: '/x/off.json'});
+  const handled = [];
+  await runCallbackPollLoop({
+    api, offsetStore: os, authorizedChat: '30006405',
+    channelChatId: -1001400000001,
+    sleep: async () => {}, log: () => {}, maxCycles: 2,
+    handleUpdate: async (u) => { handled.push(u.callback_query.data); },
+  });
+  assert.deepEqual(handled, ['ifx:menu:weekly'], 'channel callback must be routed to the handler');
+  assert.ok(!calls.some((c) => c.url.endsWith('/sendMessage')), 'channel callback must not open a DM');
+});
+
+test('loop ignores an unknown (non-DM, non-IFX-channel) chat callback', async () => {
+  const otherCb = {
+    update_id: 1,
+    callback_query: {
+      id: 'q1', data: 'bbma:mtf:alert-1',
+      message: {message_id: 5, chat: {id: -1009999999999, type: 'channel', title: 'other_channel'}},
+    },
+  };
+  const {fn, calls} = fakeFetch([
+    {status: 200, result: [otherCb]},
+    {status: 200, result: {}},
+    {status: 200, result: []},
+  ]);
+  const api = makeTelegramApi({fetchFn: fn, token: 'TOK'});
+  const os = makeOffsetStore({fs: fakeFs({}), path: {dirname: () => '/x'}, filePath: '/x/off.json'});
+  let handled = 0;
+  await runCallbackPollLoop({
+    api, offsetStore: os, authorizedChat: '30006405',
+    channelChatId: -1001400000001,
+    sleep: async () => {}, log: () => {}, maxCycles: 1,
+    handleUpdate: () => { handled += 1; },
+  });
+  assert.equal(handled, 0, 'unrelated channel callback must not be handled');
+});
+
 test('loop ignores unauthorized chat and does not send a reply', async () => {
   const {fn, calls} = fakeFetch([
     {status: 200, result: [cb(1, 'bbma:mtf:alert-1', 99999)]},   // wrong chat

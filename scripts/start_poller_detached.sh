@@ -32,6 +32,12 @@ BOX_ENV="${HELIX_BOX_ENV:-$REPO_ROOT/.env.box}"
 mkdir -p "$RUN_DIR"
 LOCK="$RUN_DIR/poller.lock"
 LOG="$RUN_DIR/poller.log"
+# Truncate the log at ~1MB on (re)start: the poller appends forever and has no
+# in-process rotation, so a multi-day restart cycle would grow it unbounded.
+# Keep the last 256KB for context; start fresh lines after that.
+if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 1048576 ]; then
+  { echo "--- rotated at $(date -u +%FT%TZ) (truncated to last 256KB) ---"; tail -c 262144 "$LOG" | sed -n '2,${p}' ; } > "$LOG.new" 2>/dev/null && mv "$LOG.new" "$LOG"
+fi
 if [ -f "$LOCK" ]; then
   oldpid="$(cat "$LOCK" 2>/dev/null || true)"
   if [ -n "$oldpid" ] && kill -0 "$oldpid" 2>/dev/null; then
