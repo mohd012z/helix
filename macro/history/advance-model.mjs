@@ -7,10 +7,26 @@ import { summarizeDistribution, convertMovementBandToPrice } from './distributio
 import { estimateSensitivity, buildSurpriseScenarios } from './scenarios.mjs';
 import { buildConfidence } from './confidence.mjs';
 
+// Window canonicalisation: the UI/event layer uses '5m'/'15m'/'1h'/'1d' while
+// IFX checkpoints are keyed 'M5'/'M15'/'H1'/'D1'. Both normalise to the same
+// canonical token so s.window === event.window matches across sources.
+const canonicalWindow = (w) => {
+  const s = String(w ?? '').trim().toUpperCase().replace(/[\s_-]/g, '');
+  if (!s) return '';
+  const mMin = s.match(/^(?:M(\d+)|(\d+)M(?:IN)?)$/);
+  if (mMin) return 'M' + (mMin[1] ?? mMin[2]);
+  if (s.endsWith('H') && s !== 'H') { const n = s.slice(0, -1); return /^\d+$/.test(n) ? 'H' + n : s; }
+  if (s.endsWith('D') && s !== 'D') { const n = s.slice(0, -1); return /^\d+$/.test(n) ? 'D' + n : s; }
+  if (s.endsWith('W') && s !== 'W') { const n = s.slice(0, -1); return /^\d+$/.test(n) ? 'W' + n : s; }
+  if (s.endsWith('N') && s.length > 1 && s.startsWith('M')) { const n = s.slice(1); return /^\d+$/.test(n) ? 'MN' + n : s; }
+  return s;
+};
+
 export function buildAdvanceModel({event,symbol,preEventPrice,features=[],history=[],asOfUtc}={}){
   const instrument=getInstrument(symbol);if(!event||!instrument||!Number.isFinite(Number(preEventPrice)))return{state:'INSUFFICIENT_DATA',reason:'MISSING_EVENT_OR_PRICE'};
   const leakage=validateAdvanceFeatures({eventTimeUtc:event.eventTimeUtc,features});if(!leakage.valid)return{state:'LEAKAGE_BLOCKED',reason:'NON_PRE_EVENT_FEATURES',rejectedFeatures:leakage.rejected};
-  const normalized=history.map(normalizeHistorySample).filter(s=>validateHistorySample(s).valid&&s.symbol===symbol&&s.window===(event.window??'5m')).map(buildReactionSample);
+  const eventWindow=canonicalWindow(event.window??'5m');
+  const normalized=history.map(normalizeHistorySample).filter(s=>validateHistorySample(s).valid&&s.symbol===symbol&&canonicalWindow(s.window)===eventWindow).map(buildReactionSample);
   if(normalized.length<3)return{state:'INSUFFICIENT_DATA',reason:'NO_EVENT_ALIGNED_HISTORY',sampleCount:normalized.length};
   const target={eventType:event.eventType??event.title??'',centralBank:event.centralBank??null,speakerRole:event.speakerRole??null,session:event.session??null,volatilityRegime:event.volatilityRegime??null,trendRegime:event.trendRegime??null,speechStance:event.speech?.stance??event.speechStance??null,asOfUtc:asOfUtc??event.eventTimeUtc};
   const ranked=rankComparableEvents(target,normalized,{asOfUtc:asOfUtc??event.eventTimeUtc,minSimilarity:0.05});

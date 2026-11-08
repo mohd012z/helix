@@ -53,3 +53,22 @@ test('advance model returns verified comparable distributions and never fabricat
   assert.ok(ready.priceBand.p10<=ready.priceBand.p50 && ready.priceBand.p50<=ready.priceBand.p90);
   assert.equal(ready.scenarios.length,5);
 });
+
+// IFX reaction samples are keyed M1..MN1 (checkpoint names); the event/UI layer
+// uses 5m/15m/1h/1d. Both must normalise to the same token or the advance-model
+// silently drops every IFX sample (the original Phase-3 gap). Regression guard:
+// reuse the READY CPI fixture but override only the window to IFX format.
+test('advance model matches IFX checkpoint window names (M5) to event windows (5m)',()=>{
+  const event={id:'next-cpi',title:'US CPI',eventType:'CPI',kind:'scheduled',state:'UPCOMING',eventTimeUtc:'2026-09-20T12:30:00Z',timeConfidence:'HIGH',window:'5m'};
+  // Same 6 CPI samples as the READY fixture, but window:'M5' (IFX checkpoint key).
+  const asIfx=(s)=>({ ...s, window:'M5', sourceQuality:'IFX_PROXY_FOREX' });
+  const history=[1,2,3,4,5,6].map(i=>asIfx(sample(i,[ -2,-1,0,1,2,3][i-1],[1.098,1.099,1.1002,1.101,1.102,1.103][i-1])));
+  const ready=buildAdvanceModel({event,symbol:'EUR/USD',preEventPrice:1.1,features:[],history,asOfUtc:'2026-09-16T12:00:00Z'});
+  assert.equal(ready.state,'READY');            // M5 samples matched event 5m
+  assert.equal(ready.sampleCount,6);
+  assert.equal(ready.comparableCount,6);
+  // A sample keyed to a DIFFERENT window must be filtered out (not counted).
+  const mixed=[...history,{...asIfx(sample(7,4,1.104)),window:'M15'}];
+  const filtered=buildAdvanceModel({event,symbol:'EUR/USD',preEventPrice:1.1,features:[],history:mixed,asOfUtc:'2026-09-16T12:00:00Z'});
+  assert.equal(filtered.sampleCount,6);         // M15 sample excluded, 6 M5 kept
+});

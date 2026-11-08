@@ -26,6 +26,7 @@ import {buildTelegramObservationHistory} from '../macro/bbma/telegram-history.mj
 import {buildSymbolLookup} from '../macro/bbma/telegram-symbol-board.mjs';
 import {loadIfxMenuData} from '../macro/bbma/ifx-news-source.mjs';
 import {renderIfxMainMenu, parseIfxMenuPayload, renderChannelRecheck, renderChannelLiveView} from '../macro/bbma/ifx-menu-view.mjs';
+import {ingestIfxToEventHistory} from './event_history/ingest.mjs';
 
 const token=process.env.TELEGRAM_BOT_TOKEN;
 const allowedChat=String(process.env.TELEGRAM_CHAT_ID ?? '');
@@ -194,7 +195,14 @@ const onCycle=async()=>{
       boardLookup=buildSymbolLookup(boardRows);
       ifxData=await loadIfxMenuData({});
       lastRefresh=Date.now();
-      log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size} ifx_news=${ifxData.newsAuto?.ok?ifxData.newsAuto.source:'none'}`);
+      // Phase 3: fold newly-settled IFX reaction samples into the public
+      // event-history dataset (idempotent; the Pages deploy publishes it).
+      let historyIngest='skip';
+      try{
+        const h=ingestIfxToEventHistory({ifxTrackPath:process.env.IFX_PRICE_TRACK??path.join(process.env.IFX_DATA_DIR??'/opt/data/ifx-live/repo','price-track.json'),outPath:path.join('data','event-history.json')});
+        historyIngest=`in=${h.incoming} written=${h.written}`;
+      }catch(e){historyIngest='FAIL '+e.message;}
+      log(`DIAG ledger_refresh observations=${history.size} source=${source} board_symbols=${boardLookup.size} ifx_news=${ifxData.newsAuto?.ok?ifxData.newsAuto.source:'none'} event_history=${historyIngest}`);
       const linked=await isChannelLinked();
       await refreshLivePost(ifxData,{linked}); // create-or-edit the pinned LIVE channel post
     }catch(e){log(`DIAG ledger_refresh=FAIL reason=${e.message}`);}
