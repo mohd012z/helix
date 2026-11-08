@@ -5,3 +5,8 @@ __pycache__/
 .env.*
 !.env.example
 .DS_Store
+# BBMA Telegram poller runtime state (per-box, never committed)
+/run-bbma/
+data/bbma-telegram-offset.json
+helix.env
+.env.box

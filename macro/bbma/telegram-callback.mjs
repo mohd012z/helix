@@ -8,11 +8,16 @@ export function parseBbmaTelegramCallback(data){
   return Object.freeze({scope,action,alert_id:alertId});
 }
 
-export function routeBbmaTelegramCallback({data,getObservation,getCurrentStatus,getExplanation,getChanges}){
+export function routeBbmaTelegramCallback({data,getObservation,getCurrentStatus,getExplanation,getChanges,getObservationBySymbol=null,getBoardSymbol=null}){
   const parsed=parseBbmaTelegramCallback(data);
   if(!parsed) return Object.freeze({ok:false,reason:'INVALID_CALLBACK'});
   if(typeof getObservation!=='function') throw new TypeError('getObservation is required');
-  const observation=getObservation(parsed.alert_id);
+  let observation=getObservation(parsed.alert_id);
+  if(!observation&&typeof getObservationBySymbol==='function') observation=getObservationBySymbol(parsed.alert_id)??null;
+  if(!observation&&parsed.action==='status'&&typeof getBoardSymbol==='function'){
+    const board=getBoardSymbol(parsed.alert_id);
+    if(board) return Object.freeze({ok:true,...parsed,mode:'PRICE_ONLY',symbol:board.symbol,payload:{symbol:board.symbol,last:board.last,changePct:board.changePct,note:'No BBMA shadow observation for this symbol — desk board price only.'}});
+  }
   if(!observation) return Object.freeze({ok:false,reason:'OBSERVATION_NOT_FOUND',...parsed});
   if(parsed.action==='status'){
     if(typeof getCurrentStatus!=='function') return Object.freeze({ok:false,reason:'CURRENT_STATUS_UNAVAILABLE',...parsed});
