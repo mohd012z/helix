@@ -545,21 +545,32 @@ def main() -> int:
     }
     status["board_XAU_USD"] = source_entry(True, "Board XAU/USD", f"provider bar {str(latest.get('datetime', ''))[:10]}")
 
-    # --- US 10Y from FRED: optional official macro source ---
-    y10_item = {"label": "US 10Y", "value": "—", "delta": "configure FRED_API_KEY", "tone": "", "note": "FRED DGS10 not configured"}
+    # --- US 10Y: FRED DGS10 primary (official), keyless Yahoo ^TNX fallback ---
+    y10_item = {"label": "US 10Y", "value": "—", "delta": "unavailable", "tone": "", "note": "US 10Y yield not resolved"}
     y10_bp = None
+    y10_ok = False
     if fred_key:
         try:
             yv, yp, ydate = fred_dgs10(fred_key)
             y10_bp = (yv - yp) * 100.0
             y10_item = {"label": "US 10Y", "value": f"{yv:.3f}%", "delta": f"{y10_bp:+.1f} bp", "tone": "bad" if y10_bp > 0 else "good", "note": f"FRED DGS10 · {ydate}"}
             status["us10y"] = source_entry(True, "FRED DGS10", f"latest {ydate}")
+            y10_ok = True
         except Exception as exc:
             status["us10y"] = source_entry(False, "FRED DGS10", str(exc))
-            warnings.append("FRED DGS10 request failed; US 10Y left unavailable.")
     else:
         status["us10y"] = source_entry(False, "FRED DGS10", "FRED_API_KEY not configured")
-        warnings.append("FRED_API_KEY not configured; US 10Y will show —.")
+    if not y10_ok:
+        # Fallback: Yahoo 10-Year Treasury yield index (keyless, daily close).
+        # ^TNX quotes the yield in percent (e.g. 4.859 == 4.859%).
+        try:
+            y = yahoo_daily_closes("^TNX", 3)
+            yv, yp = f(y[-1]), f(y[-2])
+            y10_bp = (yv - yp) * 100.0
+            y10_item = {"label": "US 10Y", "value": f"{yv:.3f}%", "delta": f"{y10_bp:+.1f} bp", "tone": "bad" if y10_bp > 0 else "good", "note": "Yahoo Finance ^TNX; daily close (FRED unavailable)"}
+            status["us10y"] = source_entry(True, "Yahoo Finance US 10Y (fallback)", "^TNX daily close")
+        except Exception as yexc:
+            warnings.append(f"US 10Y unavailable from both sources (FRED + Yahoo ^TNX: {yexc}).")
 
     # --- Recent news: optional; no numeric impact invented ---
     news = []
