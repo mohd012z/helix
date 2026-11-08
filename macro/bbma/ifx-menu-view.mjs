@@ -12,7 +12,7 @@
  * user/feed-derived strings.
  */
 import {
-  selectUpcomingHighImpact, selectLatestNews, selectAtrForSymbols, selectGoldMtfAtr, selectPivots,
+  selectUpcomingHighImpact, selectUpcomingEvents, selectLatestNews, selectAtrForSymbols, selectGoldMtfAtr, selectPivots,
 } from './ifx-news-source.mjs';
 import { buildBbmaKeyboard } from './telegram-symbol-board.mjs';
 
@@ -56,7 +56,8 @@ function fmtPx(n, d) {
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-const IMPACT_EMOJI = { high: '🔴', medium: '🟡', low: '⚪' };
+const IMPACT_EMOJI = { high: '🔴', medium: '🟡', med: '🟡', low: '⚪' };
+const impactEmoji = (imp) => IMPACT_EMOJI[imp] ?? '⚪';
 const SIGNAL_EMOJI = { BUY: '🟢', SELL: '🔴', NEUTRAL: '⚪', BULLISH: '🟢', BEARISH: '🔴', HAWKISH: '🦅', DOVISH: '🕊️', BULL: '🟢', BEAR: '🔴' };
 
 export function renderIfxMainMenu({ boardRows = null, dashboardUrl = null } = {}) {
@@ -81,24 +82,35 @@ export function renderIfxMainMenu({ boardRows = null, dashboardUrl = null } = {}
   return Object.freeze({ text, parse_mode: 'HTML', reply_markup: rows.filter((r) => r.length) });
 }
 
-export function renderIfxNewsEventView(data, { now = data.now } = {}) {
-  const rows = selectUpcomingHighImpact(data.newsAuto, { now, limit: 6 });
+export function renderIfxNewsEventView(data, { now = data.now, limit = 14 } = {}) {
+  // All impact tiers low→high (Anam: "news event must realtime update from
+  // low-high impact"). Data is the live calendar heartbeat (refresh every
+  // 5 min); the countdown is recomputed at render time, so every tap shows
+  // the current time-to-event.
+  const rows = selectUpcomingEvents(data.newsAuto, { now, limit });
   if (!rows.length) {
-    return Object.freeze({ text: '📅 <b>NEWS EVENT</b>\n\nNo upcoming high-impact forex events in the current-week window.\n\nResearch context only.', parse_mode: 'HTML' });
+    return Object.freeze({ text: '📅 <b>NEWS EVENT</b>\n\nNo upcoming forex events in the current-week window (low→high).\n\nLive feed · refreshes every 5 min · research context only.', parse_mode: 'HTML' });
   }
-  const lines = ['📅 <b>NEWS EVENT — upcoming high-impact</b>', ''];
+  const counts = { high: 0, med: 0, low: 0 };
+  for (const r of rows) {
+    if (r.impact === 'high') counts.high += 1;
+    else if (r.impact === 'low') counts.low += 1;
+    else counts.med += 1;
+  }
+  const lines = ['📅 <b>NEWS EVENT — all impacts (low→high)</b>', ''];
   rows.forEach((r) => {
     const tag = `[${esc(r.currency)}]`;
-    lines.push(`${IMPACT_EMOJI[r.e?.importance] ?? '🔴'} <b>${esc(r.event)}</b> ${tag}`);
+    lines.push(`${impactEmoji(r.impact)} <b>${esc(r.event)}</b> ${tag}`);
     lines.push(`   🕒 ${esc(r.timeMyt)} MYT — ${esc(r.countdown)}`);
     const meta = [];
     if (r.forecast) meta.push(`forecast ${esc(r.forecast)}`);
     if (r.previous) meta.push(`prev ${esc(r.previous)}`);
-    if (r.focusTf) meta.push(`focus ${esc(r.focusTf)}`);
+    if (r.focusTf && r.focusTf !== 'Context') meta.push(`focus ${esc(r.focusTf)}`);
     if (meta.length) lines.push(`   ${meta.join(' · ')}`);
     lines.push('');
   });
-  lines.push('Times in MYT (UTC+8). Source: ForexFactory this-week feed.');
+  lines.push(`${counts.high} high · ${counts.med} med · ${counts.low} low in window`);
+  lines.push('Times in MYT (UTC+8) · ForexFactory this-week feed · live, refreshes every 5 min.');
   lines.push('Research context only — not a direction call.');
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML' });
 }
@@ -401,23 +413,26 @@ export function renderChannelRecheck(action, data, { now = Date.now(), botUserna
     return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
   }
   if (action === 'upcoming') {
-    const rows = selectUpcomingHighImpact(d?.newsAuto, { now: t, limit: 10 });
+    // All impacts low→high (Anam: "news event must realtime update from
+    // low-high impact"); the live post + this recheck use the same selector
+    // so the channel matches the DM.
+    const rows = selectUpcomingEvents(d?.newsAuto, { now: t, limit: 10 });
     const lines = [`🔭 <b>UPCOMING EVENTS — rechecked ${myt} MYT</b>`, ''];
     if (!rows.length) {
-      lines.push('No upcoming high-impact forex events in the current-week window (quiet/weekend).');
+      lines.push('No upcoming forex events in the current-week window (low→high).');
     } else {
       rows.forEach((r) => {
         const tag = `[${esc(r.currency)}]`;
-        lines.push(`🔴 <b>${esc(r.event)}</b> ${tag}`);
+        lines.push(`${impactEmoji(r.impact)} <b>${esc(r.event)}</b> ${tag}`);
         lines.push(`   🕒 ${esc(r.timeMyt)} MYT — ${esc(r.countdown)}`);
         const meta = [];
         if (r.forecast) meta.push(`forecast ${esc(r.forecast)}`);
         if (r.previous) meta.push(`prev ${esc(r.previous)}`);
-        if (r.focusTf) meta.push(`focus ${esc(r.focusTf)}`);
+        if (r.focusTf && r.focusTf !== 'Context') meta.push(`focus ${esc(r.focusTf)}`);
         if (meta.length) lines.push(`   ${meta.join(' · ')}`);
         lines.push('');
       });
-      lines.push('Times in MYT (UTC+8) · ForexFactory this-week feed.');
+      lines.push('Times in MYT (UTC+8) · ForexFactory this-week feed · live, refreshes every 5 min.');
     }
     lines.push('', 'Research context only — not a direction call.');
     return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', reply_markup: channelMenuKeyboard({ botUsername, linked }) });
@@ -459,11 +474,11 @@ export function renderChannelLiveView(data, { now = Date.now(), botUsername = 'n
     const sig = n.signal && n.signal !== 'NEUTRAL' ? n.signal : 'NEUTRAL';
     lines.push(`${SIGNAL_EMOJI[sig] ?? '⚪'} ${esc(n.title)}`);
   });
-  const rows = selectUpcomingHighImpact(d?.newsAuto, { now: t, limit: 3 });
-  lines.push('', '<b>Upcoming high-impact</b>');
+  const rows = selectUpcomingEvents(d?.newsAuto, { now: t, limit: 3 });
+  lines.push('', '<b>Next events (all impacts)</b>');
   if (!rows.length) lines.push('All clear — no events in the current-week window.');
-  else rows.forEach((r) => lines.push(`🔴 ${esc(r.event)} — ${esc(r.timeMyt)} MYT (${esc(r.countdown)})`));
-  lines.push('', '📰 Full weekly · 🔭 Full upcoming · 📊 Interactive menu:');
+  else rows.forEach((r) => lines.push(`${impactEmoji(r.impact)} ${esc(r.event)} — ${esc(r.timeMyt)} MYT (${esc(r.countdown)})`));
+  lines.push('', '📰 Full weekly · 🔭 Full upcoming (low→high) · 📊 Interactive menu:');
   return Object.freeze({ text: lines.join('\n'), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: channelMenuKeyboard({ botUsername, linked }) });
 }
 

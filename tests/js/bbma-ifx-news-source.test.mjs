@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  parseMytToUtc, countdownLabel, selectUpcomingHighImpact, selectLatestNews,
+  parseMytToUtc, countdownLabel, selectUpcomingHighImpact, selectUpcomingEvents, selectLatestNews,
   selectAtrForSymbols, selectGoldMtfAtr, loadIfxMenuData,
 } from '../../macro/bbma/ifx-news-source.mjs';
 
@@ -65,6 +65,50 @@ test('selectUpcomingHighImpact keeps only high-impact upcoming events, soonest f
 test('selectUpcomingHighImpact fails closed on missing data', () => {
   assert.deepEqual(selectUpcomingHighImpact(null, { now: NOW }), []);
   assert.deepEqual(selectUpcomingHighImpact({ incoming: [] }, { now: NOW }), []);
+});
+
+test('selectUpcomingEvents returns all impact tiers (low→high), soonest first, from calendarAll', () => {
+  const NA = {
+    incoming: [{ importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Sat, 2026-11-07 21:30', currency: 'USD', forecast: '170k', previous: '227k' }],
+    calendarAll: [
+      { importance: 'med', event: '[GBP] GfK Consumer Confidence', timeMyt: 'Sat, 2026-11-07 16:00', currency: 'GBP', forecast: '-22', previous: '-23' },
+      { importance: 'low', event: '[AUD] Retail Sales m/m', timeMyt: 'Sat, 2026-11-07 22:30', currency: 'AUD', forecast: '0.5%', previous: '0.2%', focusTf: 'Context' },
+      { importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Sat, 2026-11-07 21:30', currency: 'USD', forecast: '170k', previous: '227k' },
+      { importance: 'low', event: '[USD] FOMC Statement', timeMyt: 'Fri, 2026-11-06 12:00', currency: 'USD', focusTf: 'Context' },
+      { importance: 'med', event: '[EUR] ECB Rate Statement', timeMyt: 'Thu, 2026-11-05 19:45', currency: 'EUR', forecast: '2.15%', previous: '2.15%' },
+      { importance: 'holiday', event: '[USD] Market closed (observed holiday)', timeMyt: 'Sat, 2026-11-07 09:00', currency: 'USD', focusTf: 'Session' },
+    ],
+  };
+  const rows = selectUpcomingEvents(NA, { now: NOW });
+  // chronological, all tiers, past (FOMC 12:00 MYT) + holiday excluded
+  assert.deepEqual(rows.map((r) => r.event), [
+    '[GBP] GfK Consumer Confidence',
+    '[USD] Non-Farm Employment Change',
+    '[AUD] Retail Sales m/m',
+  ]);
+  assert.deepEqual(rows.map((r) => r.impact), ['med', 'high', 'low']);
+  // NFP 21:30 MYT = 13:30 UTC is 11h30m after NOW (02:00 UTC)
+  assert.match(rows[1].countdown, /in 11h 30m/);
+  assert.equal(rows[0].forecast, '-22');
+  assert.ok(!rows.some((r) => /holiday|FOMC Statement|ECB/.test(r.event)));
+});
+
+test('selectUpcomingEvents respects limit and fails closed', () => {
+  const NA = {
+    calendarAll: [
+      { importance: 'low', event: '[AUD] Retail Sales m/m', timeMyt: 'Sat, 2026-11-07 14:30', currency: 'AUD' },
+      { importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Sat, 2026-11-07 11:30', currency: 'USD' },
+    ],
+  };
+  // NFP (11:30 MYT = 03:30 UTC) is 1.5h ahead of NOW (02:00 UTC); Retail (14:30 MYT = 06:30 UTC) is 4.5h ahead.
+  assert.equal(selectUpcomingEvents(NA, { now: NOW, limit: 1 }).length, 1);
+  assert.equal(selectUpcomingEvents(NA, { now: NOW, limit: 1 })[0].event, '[USD] Non-Farm Employment Change');
+  assert.deepEqual(selectUpcomingEvents(NA, { now: NOW }).map((r) => r.impact), ['high', 'low']);
+  // calendarAll absent -> falls back to incoming (high+med)
+  const onlyIncoming = { incoming: [{ importance: 'high', event: '[USD] NFP', timeMyt: 'Sat, 2026-11-07 21:30', currency: 'USD' }] };
+  assert.equal(selectUpcomingEvents(onlyIncoming, { now: NOW })[0].event, '[USD] NFP');
+  assert.deepEqual(selectUpcomingEvents(null, { now: NOW }), []);
+  assert.deepEqual(selectUpcomingEvents({}, { now: NOW }), []);
 });
 
 test('selectLatestNews ranks non-NEUTRAL first and caps the list', () => {
