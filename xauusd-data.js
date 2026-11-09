@@ -2,7 +2,7 @@
 window.XAUUSD_DATA = {
   "meta": {
     "pipelineVersion": "2.0.0",
-    "generatedAt": "2026-11-08T10:24:24+08:00",
+    "generatedAt": "2026-11-09T10:38:20+08:00",
     "timezone": "Asia/Kuala_Lumpur",
     "cadence": "daily",
     "expectedUpdateLocal": "07:10",
@@ -13,161 +13,161 @@ window.XAUUSD_DATA = {
       "xau": {
         "ok": true,
         "label": "Twelve Data XAU/USD",
-        "detail": "latest daily bar 2026-11-08",
-        "timestamp": "2026-11-08T10:24:24+08:00"
+        "detail": "latest daily bar 2026-11-09",
+        "timestamp": "2026-11-09T10:38:20+08:00"
       },
       "dxy": {
         "ok": true,
         "label": "Yahoo Finance DXY (fallback)",
         "detail": "DX-Y.NYB daily close",
-        "timestamp": "2026-11-08T10:24:24+08:00"
+        "timestamp": "2026-11-09T10:38:21+08:00"
       },
       "brent": {
         "ok": true,
         "label": "Yahoo Finance Brent (fallback)",
         "detail": "BZ=F daily close",
-        "timestamp": "2026-11-08T10:24:33+08:00"
+        "timestamp": "2026-11-09T10:38:29+08:00"
       },
       "board_EUR_USD": {
         "ok": true,
         "label": "Board EUR/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:25:24+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:39:20+08:00"
       },
       "board_GBP_USD": {
         "ok": true,
         "label": "Board GBP/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:25:34+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:39:30+08:00"
       },
       "board_USD_JPY": {
         "ok": true,
         "label": "Board USD/JPY",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:25:44+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:39:41+08:00"
       },
       "board_USD_CHF": {
         "ok": true,
         "label": "Board USD/CHF",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:25:54+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:39:51+08:00"
       },
       "board_AUD_USD": {
         "ok": true,
         "label": "Board AUD/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:05+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:01+08:00"
       },
       "board_USD_CAD": {
         "ok": true,
         "label": "Board USD/CAD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:15+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:11+08:00"
       },
       "board_NZD_USD": {
         "ok": true,
         "label": "Board NZD/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:25+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:21+08:00"
       },
       "board_EUR_GBP": {
         "ok": true,
         "label": "Board EUR/GBP",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:35+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:31+08:00"
       },
       "board_EUR_JPY": {
         "ok": true,
         "label": "Board EUR/JPY",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:45+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:41+08:00"
       },
       "board_GBP_JPY": {
         "ok": true,
         "label": "Board GBP/JPY",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:26:55+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:40:51+08:00"
       },
       "board_AUD_JPY": {
         "ok": true,
         "label": "Board AUD/JPY",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:27:05+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:41:02+08:00"
       },
       "board_EUR_AUD": {
         "ok": true,
         "label": "Board EUR/AUD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:27:15+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:41:12+08:00"
       },
       "board_XAG_USD": {
         "ok": false,
         "label": "Board XAG/USD",
         "detail": "404 Client Error: Not Found for url: https://api.twelvedata.com/time_series?symbol=XAG%2FUSD&interval=1day&outputsize=2&order=DESC&timezone=UTC&apikey=[REDACTED]",
-        "timestamp": "2026-11-08T10:27:30+08:00"
+        "timestamp": "2026-11-09T10:41:27+08:00"
       },
       "board_BTC_USD": {
         "ok": true,
         "label": "Board BTC/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:27:40+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:41:37+08:00"
       },
       "board_ETH_USD": {
         "ok": true,
         "label": "Board ETH/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:27:51+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:41:47+08:00"
       },
       "board_XAU_USD": {
         "ok": true,
         "label": "Board XAU/USD",
-        "detail": "provider bar 2026-11-08",
-        "timestamp": "2026-11-08T10:28:01+08:00"
+        "detail": "provider bar 2026-11-09",
+        "timestamp": "2026-11-09T10:41:57+08:00"
       },
       "us10y": {
         "ok": true,
         "label": "FRED DGS10",
         "detail": "latest 2026-11-05",
-        "timestamp": "2026-11-08T10:28:01+08:00"
+        "timestamp": "2026-11-09T10:41:57+08:00"
       },
       "news": {
         "ok": true,
         "label": "NewsAPI",
         "detail": "0 relevant recent items",
-        "timestamp": "2026-11-08T10:28:01+08:00"
+        "timestamp": "2026-11-09T10:41:57+08:00"
       },
       "fedSpeeches": {
         "ok": true,
         "label": "Federal Reserve speeches",
         "detail": "6 official listings",
-        "timestamp": "2026-11-08T10:28:01+08:00"
+        "timestamp": "2026-11-09T10:41:58+08:00"
       }
     },
     "warnings": []
   },
-  "updated": "2026-11-08 10:24 MYT",
+  "updated": "2026-11-09 10:38 MYT",
   "session": "Daily verified snapshot · sourced data + labelled heuristic overlays",
   "price": {
-    "spot": 4066.08,
-    "change": 0.04,
-    "changePct": 0.0,
-    "dayRange": "4,065.92 - 4,066.17",
-    "monthPct": -2.39,
-    "yearPct": -6.49,
+    "spot": 4124.81,
+    "change": 58.78,
+    "changePct": 1.45,
+    "dayRange": "4,054.86 - 4,133.70",
+    "monthPct": -0.4,
+    "yearPct": -5.14,
     "ath": null,
-    "note": "Latest provider daily bar: 2026-11-08; rolling history used: 370 bars",
-    "latestDailyClose": 4066.08,
+    "note": "Latest provider daily bar: 2026-11-09; rolling history used: 370 bars",
+    "latestDailyClose": 4124.81,
     "priceType": "DAILY_CLOSE",
     "rollingHigh": 5595.46,
     "rollingWindowBars": 370,
-    "providerBarTime": "2026-11-08"
+    "providerBarTime": "2026-11-09"
   },
   "macro": [
     {
       "label": "DXY",
-      "value": "102.30",
-      "delta": "+0.74%",
-      "tone": "bad",
+      "value": "102.17",
+      "delta": "-0.13%",
+      "tone": "good",
       "note": "Yahoo Finance DX-Y.NYB; daily close (TD symbol unconfirmed)"
     },
     {
@@ -179,19 +179,19 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "Brent",
-      "value": "$98.32",
-      "delta": "+0.03%",
-      "tone": "bad",
+      "value": "$97.74",
+      "delta": "-0.59%",
+      "tone": "good",
       "note": "Yahoo Finance BZ=F; daily close (TD catalog miss)"
     }
   ],
   "sentiment": {
-    "bias": "DOWNWARD",
-    "goldTone": "BEARISH",
-    "score": -0.19,
+    "bias": "UPWARD",
+    "goldTone": "BULLISH",
+    "score": 0.396,
     "confidence": 90,
     "summary": "Mechanical daily pressure model using sourced USD/yield moves plus a small observed XAU-momentum term. It is not a forecast or trade instruction.",
-    "netSpeechSignal": "DOWN",
+    "netSpeechSignal": "UP",
     "netSpeechPct": 0.0,
     "netNote": "Direction only. No fabricated percentage impact is assigned to headlines or speeches."
   },
@@ -325,15 +325,15 @@ window.XAUUSD_DATA = {
   ],
   "levels": {
     "resistance": [
-      4071.12,
-      4076.2,
-      4082.06,
-      4155.9
+      4069.35,
+      4072.67,
+      4074.73,
+      4147.6
     ],
     "support": [
-      4060.17,
-      4054.31,
-      4049.23,
+      4063.96,
+      4061.9,
+      4058.58,
       3866.02
     ],
     "note": "Classic pivot levels from previous daily OHLC plus recent 20-day extreme; mechanical, not guarantees."
@@ -348,120 +348,120 @@ window.XAUUSD_DATA = {
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 1.11456,
-        "changePct": 0.04,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 1.11534,
+        "changePct": 0.13,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "GBP/USD": {
         "symbol": "GBP/USD",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 1.33551,
-        "changePct": 0.02,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 1.33745,
+        "changePct": 0.21,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "USD/JPY": {
         "symbol": "USD/JPY",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 158.48151,
-        "changePct": -0.0,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 158.22907,
+        "changePct": -0.14,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "USD/CHF": {
         "symbol": "USD/CHF",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 0.82013,
-        "changePct": 0.04,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 0.82099,
+        "changePct": 0.05,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "AUD/USD": {
         "symbol": "AUD/USD",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 0.68668,
-        "changePct": 0.0,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 0.69014,
+        "changePct": 0.49,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "USD/CAD": {
         "symbol": "USD/CAD",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 1.41223,
-        "changePct": -0.05,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 1.41093,
+        "changePct": -0.17,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "NZD/USD": {
         "symbol": "NZD/USD",
         "assetClass": "fx",
         "group": "major",
         "ok": true,
-        "last": 0.55446,
-        "changePct": 0.01,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 0.55829,
+        "changePct": 0.33,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "EUR/GBP": {
         "symbol": "EUR/GBP",
         "assetClass": "fx",
         "group": "minor",
         "ok": true,
-        "last": 0.83457,
-        "changePct": 0.02,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 0.834,
+        "changePct": -0.07,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "EUR/JPY": {
         "symbol": "EUR/JPY",
         "assetClass": "fx",
         "group": "minor",
         "ok": true,
-        "last": 176.63334,
-        "changePct": 0.04,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 176.47388,
+        "changePct": -0.01,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "GBP/JPY": {
         "symbol": "GBP/JPY",
         "assetClass": "fx",
         "group": "minor",
         "ok": true,
-        "last": 211.64897,
-        "changePct": 0.02,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 211.58146,
+        "changePct": 0.05,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "AUD/JPY": {
         "symbol": "AUD/JPY",
         "assetClass": "fx",
         "group": "minor",
         "ok": true,
-        "last": 108.82038,
-        "changePct": -0.0,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 109.21578,
+        "changePct": 0.37,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "EUR/AUD": {
         "symbol": "EUR/AUD",
         "assetClass": "fx",
         "group": "minor",
         "ok": true,
-        "last": 1.6232,
-        "changePct": 0.05,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 1.61605,
+        "changePct": -0.36,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "XAG/USD": {
         "symbol": "XAG/USD",
@@ -478,30 +478,30 @@ window.XAUUSD_DATA = {
         "assetClass": "digital",
         "group": "digital",
         "ok": true,
-        "last": 75746.88,
-        "changePct": -0.16,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 75428.01,
+        "changePct": 0.77,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "ETH/USD": {
         "symbol": "ETH/USD",
         "assetClass": "digital",
         "group": "digital",
         "ok": true,
-        "last": 2233.64,
-        "changePct": -0.29,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 2155.89,
+        "changePct": 1.34,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       },
       "XAU/USD": {
         "symbol": "XAU/USD",
         "assetClass": "metal",
         "group": "metal",
         "ok": true,
-        "last": 4066.08,
-        "changePct": 0.0,
-        "barDate": "2026-11-08",
-        "detail": "provider bar 2026-11-08"
+        "last": 4124.81,
+        "changePct": 1.45,
+        "barDate": "2026-11-09",
+        "detail": "provider bar 2026-11-09"
       }
     }
   },
@@ -509,9 +509,9 @@ window.XAUUSD_DATA = {
   "pressure": [
     {
       "label": "USD daily move",
-      "level": "+0.74%",
-      "w": 92,
-      "dir": "down"
+      "level": "-0.13%",
+      "w": 16,
+      "dir": "up"
     },
     {
       "label": "US 10Y daily move",
@@ -521,21 +521,17 @@ window.XAUUSD_DATA = {
     },
     {
       "label": "Observed XAU momentum",
-      "level": "+0.00%",
-      "w": 0,
+      "level": "+1.45%",
+      "w": 96,
       "dir": "up"
     }
   ],
   "priceSeries": {
     "label": "XAU/USD daily close (Twelve Data)",
     "unit": "USD / troy oz",
-    "yMin": 3846.75,
-    "yMax": 4143.08,
+    "yMin": 3845.5,
+    "yMax": 4154.74,
     "points": [
-      {
-        "x": "2026-10-26",
-        "y": 4013.44
-      },
       {
         "x": "2026-10-27",
         "y": 4062.29
@@ -586,7 +582,11 @@ window.XAUUSD_DATA = {
       },
       {
         "x": "2026-11-08",
-        "y": 4066.08
+        "y": 4066.03
+      },
+      {
+        "x": "2026-11-09",
+        "y": 4124.81
       }
     ]
   },
@@ -597,7 +597,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-11-08",
+        "x": "2026-11-09",
         "y": 0
       }
     ]
@@ -609,7 +609,7 @@ window.XAUUSD_DATA = {
     "yMax": 1,
     "points": [
       {
-        "x": "2026-11-08",
+        "x": "2026-11-09",
         "y": 0
       }
     ]
