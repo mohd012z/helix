@@ -13,7 +13,17 @@ const NOW = Date.parse('2026-11-06T00:00:00Z'); // 08:00 MYT; NFP (13:30 UTC) is
 const DATA = {
   now: NOW,
   newsAuto: { ok: true, data: {
-    incoming: [{ importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Fri, 2026-11-06 21:30', currency: 'USD', forecast: '170k', previous: '227k', focusTf: 'M5 - M15' }],
+    incoming: [
+      { importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Fri, 2026-11-06 21:30', currency: 'USD', forecast: '170k', previous: '227k', focusTf: 'M5 - M15' },
+      { importance: 'med', event: '[GBP] GfK Consumer Confidence', timeMyt: 'Fri, 2026-11-06 16:00', currency: 'GBP', forecast: '-22', previous: '-23' },
+    ],
+    calendarAll: [
+      { importance: 'low', event: '[AUD] Retail Sales m/m', timeMyt: 'Fri, 2026-11-06 14:30', currency: 'AUD', forecast: '0.5%', previous: '0.2%', focusTf: 'Context' },
+      { importance: 'med', event: '[GBP] GfK Consumer Confidence', timeMyt: 'Fri, 2026-11-06 16:00', currency: 'GBP', forecast: '-22', previous: '-23' },
+      { importance: 'high', event: '[USD] Non-Farm Employment Change', timeMyt: 'Fri, 2026-11-06 21:30', currency: 'USD', forecast: '170k', previous: '227k', focusTf: 'M5 - M15' },
+      { importance: 'low', event: '[AUD] Wholesale Sales m/m', timeMyt: 'Fri, 2026-11-06 22:30', currency: 'AUD', forecast: null, previous: '1.1%', focusTf: 'Context' },
+      { importance: 'holiday', event: '[USD] Independence Day (market closed)', timeMyt: 'Fri, 2026-11-06 00:00', currency: 'USD', focusTf: 'Session' },
+    ],
     byTab: { forex: { news: [{ title: 'Fed flags data-dependence', signal: 'HAWKISH', impact: 'High', source: 'Reuters', url: 'https://example.com/a' }] } },
   } },
   atr: { ok: true, data: { rows: [{ id: 'XAUUSD', label: 'XAU/USD', last: 4070.1, atr: 9.4, atrPct: 0.23, bars: 67 }] } },
@@ -41,17 +51,27 @@ test('main menu carries the four sections + analysis split, with keyboard', () =
   assert.ok(data.includes(ifxMenuCallbackData('analysis-btc')));
 });
 
-test('news-event view lists the upcoming high-impact event with MYT time + countdown', () => {
+test('news-event view lists ALL impact tiers low→high with MYT time + countdown', () => {
   const v = renderIfxNewsEventView(UNWRAP, { now: NOW });
-  assert.match(v.text, /NEWS EVENT/);
-  assert.match(v.text, /Non-Farm Employment Change/);
+  assert.match(v.text, /NEWS EVENT — all impacts/);
+  // chronological order, all three tiers present
+  assert.match(v.text, /Retail Sales m\/m/);        // low
+  assert.match(v.text, /GfK Consumer Confidence/);   // med
+  assert.match(v.text, /Non-Farm Employment Change/);// high
+  assert.match(v.text, /Wholesale Sales m\/m/);      // low (after NFP)
   assert.match(v.text, /21:30/);
   assert.match(v.text, /in 13h/);
+  // tier counts line (1 high NFP, 1 med GfK, 2 low Retail+Wholesale; holiday excluded)
+  assert.match(v.text, /1 high · 1 med · 2 low in window/);
+  // low-impact "Context" focus tag is suppressed (noise)
+  assert.doesNotMatch(v.text, /focus Context/);
+  // holiday rows are not tradeable events — excluded
+  assert.doesNotMatch(v.text, /Independence Day/);
 });
 
 test('news-event view fails closed (no fabrication) when data is empty', () => {
   const v = renderIfxNewsEventView({ now: NOW, newsAuto: null }, { now: NOW });
-  assert.match(v.text, /No upcoming high-impact/);
+  assert.match(v.text, /No upcoming forex events/);
 });
 
 test('bbma view shows board prices and never fabricates a direction', () => {
@@ -100,7 +120,7 @@ test('renderIfxMenuView accepts the wrapped loadIfxMenuData() bundle (poller pat
   assert.match(renderIfxMenuView('analysis-xau', wrapped).text, /Gold MTF ATR/);
   // a failed section (ok:false) must render as "no data", not crash
   const partial = { now: NOW, newsAuto: { ok: false }, atr: { ok: false }, atrMtf: { ok: false }, macro: { ok: false } };
-  assert.match(renderIfxMenuView('news-event', partial).text, /No upcoming high-impact/);
+  assert.match(renderIfxMenuView('news-event', partial).text, /No upcoming forex events/);
   assert.match(renderIfxMenuView('analysis-xau', partial).text, /not available/);
 });
 
@@ -159,12 +179,14 @@ test('channel recheck (weekly) lists fresh headlines with a recheck timestamp + 
   assert.equal(v.disable_web_page_preview, true);
 });
 
-test('channel recheck (upcoming) lists the upcoming high-impact event with MYT time', () => {
+test('channel recheck (upcoming) lists events across all impacts (low→high) with MYT time', () => {
   const v = renderChannelRecheck('upcoming', { newsAuto: DATA.newsAuto.data, now: NOW }, { now: NOW });
   assert.match(v.text, /UPCOMING EVENTS — rechecked/);
-  assert.match(v.text, /Non-Farm Employment Change/);
+  assert.match(v.text, /Retail Sales m\/m/);        // low now included
+  assert.match(v.text, /Non-Farm Employment Change/);// high
   assert.match(v.text, /21:30/);
   assert.match(v.text, /in 13h/);
+  assert.doesNotMatch(v.text, /Independence Day/);  // holiday excluded
   assert.ok(v.reply_markup);
 });
 
@@ -184,7 +206,7 @@ test('channel recheck (pivots) shows the C/R3/S3 compact ladder + callback butto
 test('channel recheck fails closed when the feed is empty (no fabrication)', () => {
   const empty = { newsAuto: { incoming: [], byTab: {} }, now: NOW };
   assert.match(renderChannelRecheck('weekly', empty, { now: NOW }).text, /No classified news/);
-  assert.match(renderChannelRecheck('upcoming', empty, { now: NOW }).text, /No upcoming high-impact/);
+  assert.match(renderChannelRecheck('upcoming', empty, { now: NOW }).text, /No upcoming forex events/);
 });
 
 test('pinned LIVE view: wrapped bundle, 3 top headlines + SELL badges + URL-button menu', () => {
@@ -194,8 +216,11 @@ test('pinned LIVE view: wrapped bundle, 3 top headlines + SELL badges + URL-butt
   assert.match(v.text, /Top classified headlines/);
   assert.match(v.text, /Fed flags data-dependence/);
   assert.ok(v.text.includes('🦅'), 'HAWKISH headlines must carry a signal emoji');
-  assert.match(v.text, /Upcoming high-impact/);
+  assert.match(v.text, /Next events \(all impacts\)/);
+  // top-3 soonest across all impacts: low Retail, med GfK, high NFP
+  assert.match(v.text, /Retail Sales m\/m/);
   assert.match(v.text, /Non-Farm Employment Change/);
+  assert.doesNotMatch(v.text, /Independence Day/);
   // The live post doubles as the menu: URL buttons only, no callback_data.
   const btns = v.reply_markup.flat();
   assert.equal(btns.length, 4);

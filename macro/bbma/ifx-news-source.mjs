@@ -119,6 +119,29 @@ export async function loadIfxMenuData({ now = Date.now(), files = {} } = {}) {
   return Object.freeze({ now, newsAuto, atr, atrMtf, macro, pivots });
 }
 
+/* Upcoming events across ALL impact tiers (low→high), soonest first.
+ * Source: the live calendar heartbeat (refresh-calendar-snapshot.js every
+ * 5 min -> news-auto.js) — calendarAll includes the low-impact rows that
+ * `incoming` filters out. Fails closed to `incoming` (high+med) when
+ * calendarAll is absent, and skips past rows + non-tradeable 'holiday'
+ * rows. Anam: "news event must realtime update from low-high impact". */
+export function selectUpcomingEvents(newsAuto, { now = Date.now(), limit = 14 } = {}) {
+  const src = Array.isArray(newsAuto?.calendarAll) && newsAuto.calendarAll.length
+    ? newsAuto.calendarAll
+    : (newsAuto?.incoming ?? []);
+  const enriched = src
+    .map((e) => ({ e, at: parseMytToUtc(e?.timeMyt, now) }))
+    .filter((x) => x.at && x.at.getTime() >= now - 10 * 60000)
+    .filter((x) => x.e?.importance && x.e.importance !== 'holiday')
+    .sort((a, b) => a.at.getTime() - b.at.getTime() || (a.e.event ?? '').localeCompare(b.e.event ?? ''));
+  return Object.freeze(enriched.slice(0, limit).map((x) => Object.freeze({
+    impact: x.e.importance,
+    event: x.e.event, timeMyt: x.e.timeMyt, currency: x.e.currency, country: x.e.country,
+    forecast: x.e.forecast, previous: x.e.previous, note: x.e.note, focusTf: x.e.focusTf,
+    countdown: countdownLabel(x.at, now), atUtc: x.at.toISOString(),
+  })));
+}
+
 /* Upcoming high-impact events (this-week window), soonest first, with MYT times. */
 export function selectUpcomingHighImpact(newsAuto, { now = Date.now(), limit = 6 } = {}) {
   const rows = (newsAuto?.incoming ?? []).filter((e) => e?.importance === 'high');
